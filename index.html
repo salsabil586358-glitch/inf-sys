@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Systèmes d'Information — Pages Bleues</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#5b8dee"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="S.I. Bleues"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Tajawal:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* Offline font fallback */
+body { font-family: 'Syne', 'Segoe UI', Arial, sans-serif; }
+.ar { font-family: 'Tajawal', 'Arial', sans-serif; }
+</style>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Syne',sans-serif;transition:background .3s,color .3s}
+button{font-family:'Syne',sans-serif;cursor:pointer}
+textarea,input{font-family:'Syne',sans-serif}
+.ar{font-family:'Tajawal',sans-serif}
+.hidden{display:none!important}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:fadeIn .3s ease}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#3a3d50;border-radius:10px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);border-radius:100px;padding:8px 20px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none;white-space:nowrap"></div>
+
+<script>
+// ═══════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════
+const A="#5b8dee",A2="#7c6af7",GOLD="#f0b429",GREEN="#34d399",RED="#f87171";
+const SR_INTERVALS={again:0,hard:1,good:3,easy:7};
+const EASE_DELTA={again:-0.2,hard:-0.1,good:0,easy:0.15};
+const MIN_EASE=1.3;
+
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const BOOK=[
+  {
+    id:1,fr:"Notions systémiques",ar:"المفاهيم النظامية",
+    tpf:["Notion d'information","Notion de système","Sous-systèmes","Organisation = Système ?"],
+    tpa:["مفهوم المعلومة","مفهوم النظام","الأنظمة الفرعية","هل المنظمة نظام؟"],
+    concepts:[
+      {fr:"Information",ar:"المعلومة",df:"Tout élément de connaissance perçu par les sens. Base de la réflexion pour prendre des décisions.",da:"كل عنصر معرفي يُدرَك بالحواس. أساس التفكير لاتخاذ القرارات.",ef:"La météo annonce de la pluie → je prends mon parapluie.",ea:"النشرة الجوية تُعلن عن مطر ← أخذت المظلة."},
+      {fr:"Système",ar:"النظام",df:"Ensemble d'éléments en interaction organisés pour atteindre un objectif commun. Entrées (E) → traitement → Sorties (S).",da:"مجموعة عناصر متفاعلة لتحقيق هدف مشترك. مدخلات ← معالجة ← مخرجات.",ef:"Cafetière : E = café + eau → S = café chaud.",ea:"آلة القهوة: مدخلات = قهوة + ماء ← مخرجات = قهوة ساخنة."},
+      {fr:"Sous-système de pilotage",ar:"نظام التوجيه",df:"Centre de décision. Fixe les objectifs, contrôle et envoie des décisions au système opérant.",da:"مركز القرار. يحدد الأهداف ويراقب ويُرسل القرارات لنظام التشغيل.",ef:"La direction générale qui définit la stratégie.",ea:"الإدارة العليا التي تضع استراتيجية الشركة."},
+      {fr:"Sous-système opérant",ar:"نظام التشغيل",df:"Exécute les tâches de production. Reçoit les décisions et alimente le S.I. en données.",da:"ينفّذ مهام الإنتاج. يستقبل القرارات ويُغذّي نظام المعلومات.",ef:"L'atelier de production, l'équipe de vente.",ea:"ورشة الإنتاج، فريق المبيعات."},
+      {fr:"Système d'Information (S.I.)",ar:"نظام المعلومات",df:"Interface entre pilotage et opérant. Collecte, mémorise, traite et diffuse les informations.",da:"الوسيط بين التوجيه والتشغيل. يجمع ويخزّن ويعالج ويوزّع المعلومات.",ef:"La comptabilité collecte les ventes et produit des rapports pour la direction.",ea:"قسم المحاسبة يجمع بيانات المبيعات ويقدّم تقارير للإدارة."},
+      {fr:"Organisation vs Système",ar:"المنظمة مقابل النظام",df:"Toute organisation est un système, mais tout système n'est pas une organisation. L'organisation requiert un élément humain.",da:"كل منظمة هي نظام، لكن ليس كل نظام منظمة. المنظمة تشترط وجود عنصر بشري.",ef:"Cafetière = système MAIS PAS organisation. Entreprise = système ET organisation.",ea:"آلة القهوة = نظام وليست منظمة. الشركة = نظام ومنظمة معاً."},
+    ],
+    quizzes:[
+      {qf:"Pourquoi s'informe-t-on selon le livre ?",qa:"لماذا نحتاج المعلومات؟",of:["Par curiosité naturelle","Pour prendre des décisions éclairées","Pour mémoriser les faits","Pour communiquer"],oa:["لإشباع الفضول","لاتخاذ قرارات مبنية على التفكير","لحفظ الوقائع","للتواصل"],ans:1,ef:"Information → réflexion → décision. Même prendre un parapluie est une décision basée sur une information.",ea:"المعلومة ← تفكير ← قرار. حتى أخذ المظلة قرار مبني على معلومة."},
+      {qf:"Différence entre organisation et système ?",qa:"الفرق بين المنظمة والنظام؟",of:["Ce sont des synonymes","Toute organisation est un système, mais pas l'inverse","Tout système est une organisation","L'organisation n'a pas d'objectif"],oa:["مصطلحان مترادفان","كل منظمة نظام لكن ليس العكس","كل نظام منظمة","المنظمة لا تحتاج أهدافاً"],ans:1,ef:"Cafetière = système sans organisation (pas d'élément humain). Entreprise = les deux.",ea:"آلة القهوة نظام وليست منظمة. الشركة نظام ومنظمة."},
+    ]
+  },
+  {
+    id:2,fr:"Le S.I. dans une organisation",ar:"نظام المعلومات في المنظمة",
+    tpf:["Rôle du S.I.","Les 4 fonctions","Statique & dynamique","Formel/Informel"],
+    tpa:["دور نظام المعلومات","الوظائف الأربع","الساكن والديناميكي","الرسمي وغير الرسمي"],
+    concepts:[
+      {fr:"Rôle du S.I.",ar:"دور نظام المعلومات",df:"Assurer la circulation des informations entre pilotage et opérant, et entre l'organisation et son environnement.",da:"ضمان تدوير المعلومات بين التوجيه والتشغيل وبين المنظمة وبيئتها.",ef:"Un ERP (SAP) qui transmet les données de production à la direction en temps réel.",ea:"نظام ERP مثل SAP الذي يُوصل بيانات الإنتاج للإدارة فوراً."},
+      {fr:"Collecte (1ère fonction)",ar:"جمع المعلومات",df:"Recueillir les données brutes de l'environnement interne et externe.",da:"جمع البيانات الخام من البيئة الداخلية والخارجية.",ef:"Saisie des bons de commande, relevés de caisse, données des capteurs.",ea:"إدخال أوامر الشراء، قراءات الصندوق، بيانات أجهزة الاستشعار."},
+      {fr:"Mémorisation (2ème fonction)",ar:"تخزين المعلومات",df:"Stocker les données durablement pour consultation ultérieure.",da:"حفظ البيانات بشكل دائم للرجوع إليها لاحقاً.",ef:"Base de données clients, historique des ventes, dossiers RH.",ea:"قاعدة بيانات العملاء، سجل المبيعات، ملفات الموارد البشرية."},
+      {fr:"Traitement (3ème fonction)",ar:"معالجة المعلومات",df:"Transformer les données brutes en informations utiles via calculs, tris et agrégations.",da:"تحويل البيانات الخام إلى معلومات مفيدة عبر الحسابات والتصنيف.",ef:"Calcul des salaires à partir des heures travaillées.",ea:"حساب الرواتب من ساعات العمل."},
+      {fr:"Transmission (4ème fonction)",ar:"نقل المعلومات",df:"Diffuser les informations aux destinataires au bon moment et au bon format.",da:"إيصال المعلومات للمستفيدين في الوقت والشكل المناسبين.",ef:"Rapport mensuel au directeur, facture au client, alerte de stock.",ea:"تقرير شهري للمدير، فاتورة للعميل، تنبيه نقص المخزون."},
+      {fr:"Statique vs Dynamique",ar:"الساكن مقابل الديناميكي",df:"Statique = structure des données stockées. Dynamique = flux et traitements (ce qui circule et change).",da:"الساكن = هيكل البيانات المخزّنة. الديناميكي = تدفق المعلومات والمعالجات.",ef:"Fiche client = statique. Mise à jour lors d'une commande = dynamique.",ea:"بطاقة العميل = ساكن. تحديثها عند كل طلب = ديناميكي."},
+    ],
+    quizzes:[
+      {qf:"Les 4 fonctions principales du S.I. sont :",qa:"الوظائف الأربع لنظام المعلومات:",of:["Produire, Vendre, Financer, Gérer","Collecter, Mémoriser, Traiter, Transmettre","Planifier, Organiser, Diriger, Contrôler","Saisir, Trier, Calculer, Imprimer"],oa:["إنتاج، بيع، تمويل، إدارة","جمع، تخزين، معالجة، نقل","تخطيط، تنظيم، توجيه، رقابة","إدخال، فرز، حساب، طباعة"],ans:1,ef:"Cycle complet : Collecter → Mémoriser → Traiter → Transmettre.",ea:"الدورة: جمع ← تخزين ← معالجة ← نقل."},
+    ]
+  },
+  {
+    id:3,fr:"Automatisation des S.I.",ar:"أتمتة أنظمة المعلومات",
+    tpf:["Pourquoi automatiser ?","S.I.A. vs S.A.I.","Fonctions internes/externes"],
+    tpa:["لماذا الأتمتة؟","S.I.A مقابل S.A.I","الوظائف الداخلية والخارجية"],
+    concepts:[
+      {fr:"Pourquoi automatiser ?",ar:"لماذا الأتمتة؟",df:"Traiter de grandes quantités d'informations avec rapidité, fiabilité et précision dépassant les capacités humaines.",da:"معالجة كميات ضخمة بسرعة ودقة وموثوقية تفوق القدرة البشرية.",ef:"10 000 commandes/jour : impossible pour un humain, fait en secondes par un ordinateur.",ea:"10,000 طلب يومياً: مستحيل بشرياً، يُنجزه الحاسوب في ثوانٍ."},
+      {fr:"S.I.A. — Système d'Information Automatisable",ar:"نظام المعلومات القابل للأتمتة",df:"La partie du S.I. pouvant être confiée à un ordinateur : tâches répétitives à règles précises.",da:"الجزء من نظام المعلومات القابل للبرمجة: مهام متكررة ذات قواعد واضحة.",ef:"La paie (calculs répétitifs), la facturation, la gestion des stocks.",ea:"كشف الرواتب، الفوترة، إدارة المخزون."},
+      {fr:"S.A.I. — Système Automatisé d'Information",ar:"النظام الآلي للمعلومات",df:"Résultat de l'automatisation du S.I.A. : le système informatisé final (matériel + logiciels + données + procédures).",da:"نتيجة أتمتة الـ S.I.A.: النظام المُؤتمَت فعلاً (أجهزة + برمجيات + بيانات + إجراءات).",ef:"Un logiciel comptable qui automatise saisie, calculs et rapports.",ea:"برنامج محاسبي يُؤتمت الإدخال والحسابات والتقارير."},
+    ],
+    quizzes:[
+      {qf:"Différence entre S.I.A. et S.A.I. ?",qa:"الفرق بين S.I.A و S.A.I؟",of:["Synonymes","S.I.A = partie automatisable ; S.A.I = résultat informatisé","S.A.I = partie automatisable ; S.I.A = résultat","S.I.A = matériel ; S.A.I = logiciel"],oa:["مترادفان","S.I.A = القابل للأتمتة | S.A.I = النتيجة بعد الأتمتة","العكس","S.I.A للأجهزة | S.A.I للبرمجيات"],ans:1,ef:"S.I.A. = ce qu'on PEUT automatiser. S.A.I. = le système informatisé résultant.",ea:"S.I.A = ما يمكن أتمتته. S.A.I = النظام المُؤتمَت فعلاً."},
+    ]
+  },
+  {
+    id:4,fr:"Flux d'informations",ar:"تدفقات المعلومات",
+    tpf:["Domaines de l'organisation","Graphe des flux","Acteurs"],
+    tpa:["مجالات المنظمة","مخطط التدفق","الأطراف الفاعلة"],
+    concepts:[
+      {fr:"Domaine de l'organisation",ar:"مجال المنظمة",df:"Sous-ensemble cohérent regroupant des activités liées autour d'une fonction précise.",da:"مجموعة فرعية متجانسة تضم أنشطة مترابطة حول وظيفة محددة.",ef:"Domaine commercial, comptable, RH, production.",ea:"المجال التجاري، المحاسبي، الموارد البشرية، الإنتاج."},
+      {fr:"Graphe des flux d'informations",ar:"مخطط تدفق المعلومات",df:"Représentation graphique des échanges d'informations entre acteurs et domaines. Les flèches représentent les flux.",da:"تمثيل بياني للتبادلات المعلوماتية. الأسهم تمثّل التدفقات.",ef:"Flèche Client → Commandes = commande. Flèche Stock → Livraison = bon de préparation.",ea:"سهم من عميل ← الطلبات = طلبية. سهم من المخزن ← التوصيل = أمر تحضير."},
+      {fr:"Acteur",ar:"الطرف الفاعل",df:"Tout émetteur ou récepteur d'informations : personne, service, département ou entité externe.",da:"أي مُرسِل أو مُستقبِل للمعلومات: شخص، قسم، إدارة أو جهة خارجية.",ef:"Client, fournisseur, responsable stock, comptabilité, direction.",ea:"العميل، المورّد، مسؤول المخزون، المحاسبة، الإدارة."},
+    ],
+    quizzes:[
+      {qf:"À quoi sert le découpage en domaines ?",qa:"ما الهدف من التقسيم إلى مجالات؟",of:["Réduire le personnel","Faciliter l'analyse et la modélisation du S.I.","Créer des hiérarchies","Automatiser les tâches"],oa:["تقليص الموظفين","تسهيل تحليل ونمذجة نظام المعلومات","بناء التراتبية","أتمتة المهام"],ans:1,ef:"On décompose le complexe en parties gérables pour mieux comprendre les flux.",ea:"نكسر المعقّد إلى أجزاء يمكن إدارتها لفهم تدفقات المعلومات."},
+    ]
+  },
+  {
+    id:5,fr:"Codification & Contrôle",ar:"الترميز والمراقبة",
+    tpf:["Types de codification","Propriétés du code","Contrôles directs/indirects"],
+    tpa:["أنواع الترميز","خصائص الترميز","المراقبة المباشرة وغير المباشرة"],
+    concepts:[
+      {fr:"Codification",ar:"الترميز",df:"Attribution d'un code unique à chaque objet d'information pour faciliter son identification, stockage et traitement.",da:"إسناد رمز فريد لكل عنصر معلوماتي لتسهيل تعريفه وتخزينه ومعالجته.",ef:"Code produit P001, code client C123, code postal 16000.",ea:"رمز المنتج P001، رمز العميل C123، الرمز البريدي 16000."},
+      {fr:"Codification séquentielle",ar:"الترميز التسلسلي",df:"Attribution de codes numériques successifs sans signification propre. Simple mais peu flexible.",da:"إسناد أرقام متتالية بدون معنى داخلي. بسيط لكن غير مرن.",ef:"Produit 001, 002, 003... Premier enregistré = premier numéro.",ea:"منتج 001، 002، 003... الأول يُسجَّل يأخذ الرقم الأول."},
+      {fr:"Codification articulée",ar:"الترميز المركّب",df:"Code composé de plusieurs parties portant chacune une signification précise.",da:"رمز يتكوّن من أجزاء متعددة، كل جزء يحمل معنى محدداً.",ef:"PH-2024-001 : P=Produit, H=Hiver, 2024=Année, 001=Séquence.",ea:"PH-2024-001: P=منتج، H=شتاء، 2024=السنة، 001=التسلسل."},
+      {fr:"Contrôles directs",ar:"المراقبة المباشرة",df:"Vérification immédiate de la validité : existence, format, plage de valeurs.",da:"التحقق الفوري من صحة البيانات: الوجود والصيغة ونطاق القيم.",ef:"Vérifier qu'un code client existe avant de valider une commande.",ea:"التحقق أن رمز العميل موجود قبل تأكيد الطلب."},
+      {fr:"Contrôles indirects",ar:"المراقبة غير المباشرة",df:"Vérification par calcul ou redondance : clé de contrôle calculée à partir des autres données.",da:"التحقق بالحساب أو التكرار: مفتاح تحقق مُحسَب من البيانات الأخرى.",ef:"Clé RIB bancaire, code ISBN des livres.",ea:"مفتاح RIB البنكي، رمز ISBN للكتب."},
+    ],
+    quizzes:[
+      {qf:"Propriété INDISPENSABLE à toute codification ?",qa:"الخاصية الضرورية في أي ترميز؟",of:["La longueur courte","La non-ambiguïté (unicité)","La signification du code","La base numérique"],oa:["الطول القصير","الوحدانية (عدم الغموض)","الدلالة الرمزية","الأساس الرقمي"],ans:1,ef:"Un objet = un code unique, un code = un seul objet. Sans unicité, le S.I. devient incohérent.",ea:"لكل عنصر رمز فريد، ولكل رمز عنصر واحد. بدون الوحدانية يتناقض نظام المعلومات."},
+    ]
+  },
+  {
+    id:6,fr:"Modélisation des S.I.",ar:"نمذجة أنظمة المعلومات",
+    tpf:["MCD — Entité/Association","Cardinalités","MCT — Traitements"],
+    tpa:["النموذج المفاهيمي للبيانات","درجات العلاقة","النموذج المفاهيمي للمعالجات"],
+    concepts:[
+      {fr:"Modélisation",ar:"النمذجة",df:"Représentation abstraite et simplifiée d'un système réel pour le comprendre et le concevoir avant réalisation.",da:"تمثيل مجرّد ومبسّط للواقع لفهمه وتصميمه قبل التنفيذ الفعلي.",ef:"Un plan d'architecte est un modèle du bâtiment avant sa construction.",ea:"مخطط المهندس المعماري نموذج للمبنى قبل البناء."},
+      {fr:"MCD — Modèle Conceptuel des Données",ar:"النموذج المفاهيمي للبيانات",df:"Représente les données et leurs relations indépendamment de toute technique. Utilise entités, associations, propriétés.",da:"يُمثّل البيانات وعلاقاتها مستقلاً عن أي تقنية. يستخدم الكيانات والعلاقات والخصائص.",ef:"Entité CLIENT (NumClient, Nom) liée à entité COMMANDE (NumCmd, Date).",ea:"كيان عميل (رقم، الاسم) مرتبط بكيان طلبية (الرقم، التاريخ)."},
+      {fr:"Entité",ar:"الكيان",df:"Objet concret ou abstrait du monde réel, identifiable et pertinent pour le S.I. Possède des propriétés.",da:"شيء ملموس أو مجرّد يمكن تعريفه وهو مهم لنظام المعلومات. له خصائص.",ef:"CLIENT, PRODUIT, FOURNISSEUR, COMMANDE, EMPLOYÉ sont des entités.",ea:"عميل، منتج، مورّد، طلبية، موظف — كلها كيانات."},
+      {fr:"Association (Relation)",ar:"العلاقة",df:"Lien sémantique entre deux entités ou plus. Peut avoir des propriétés propres.",da:"رابط دلالي بين كيانين أو أكثر. قد تحمل خصائص خاصة.",ef:"CLIENT 'passe' COMMANDE — 'passer' est l'association.",ea:"عميل 'يُقدّم' طلبية — 'يُقدّم' هي العلاقة بين الكيانين."},
+      {fr:"Cardinalité",ar:"درجة العلاقة",df:"Exprime le nombre minimum et maximum de fois qu'une entité participe à une association.",da:"تعبّر عن الحد الأدنى والأقصى لمشاركة كيان في علاقة.",ef:"Un client passe (0,n) commandes. Une commande passée par (1,1) client.",ea:"عميل يُقدّم (0,n) طلبيات. طلبية تُقدَّم من (1,1) عميل."},
+      {fr:"MCT — Modèle Conceptuel des Traitements",ar:"النموذج المفاهيمي للمعالجات",df:"Représente les opérations sur les données, les événements déclencheurs et les résultats produits.",da:"يُمثّل العمليات على البيانات والأحداث المُشغِّلة والنتائج.",ef:"Événement 'Commande reçue' → 'Vérifier stock' → 'Bon préparation' OU 'Alerte rupture'.",ea:"حدث 'استلام طلبية' ← 'التحقق من المخزون' ← 'أمر تحضير' أو 'تنبيه نفاذ'."},
+    ],
+    quizzes:[
+      {qf:"Différence fondamentale MCD vs MCT ?",qa:"الفرق الجوهري بين MCD و MCT؟",of:["MCD = logique, MCT = physique","MCD = données statiques, MCT = traitements dynamiques","MCD = matériel, MCT = logiciel","Ils modélisent la même chose"],oa:["MCD منطقي، MCT مادي","MCD = بيانات ساكنة، MCT = معالجات ديناميكية","MCD للأجهزة، MCT للبرمجيات","يُنمذجان نفس الشيء"],ans:1,ef:"MCD = QUELLES données et relations (statique). MCT = QUELLES opérations et quand (dynamique).",ea:"MCD = ماذا نُخزّن وكيف ترتبط (ساكن). MCT = ما نفعله ومتى (ديناميكي)."},
+    ]
+  }
+];
+
+const TD=[
+  {
+    lessonId:1,
+    reflections:[
+      {qf:"Comparer entre l'information interne et externe dans une organisation ?",qa:"قارن بين المعلومة الداخلية والخارجية في المنظمة؟",
+       solutionFr:"• Interne : produite à l'intérieur de l'organisation, concerne le fonctionnement interne.\n• Externe : fournie par l'environnement externe, concerne l'évolution de l'environnement.\n• Les deux sont utiles pour la prise de décision.",
+       solutionAr:"• الداخلية: تُنتَج داخل المنظمة، تخص سيرها الداخلي.\n• الخارجية: مصدرها البيئة الخارجية، تخص تطور المحيط.\n• كلتاهما مفيدة لاتخاذ القرار.",
+       methodFr:"Structurez votre réponse en tableau : origine → portée → direction du flux → utilité.",
+       methodAr:"نظّم إجابتك في جدول: المصدر ← النطاق ← اتجاه التدفق ← الفائدة."},
+      {qf:"Quelle est la différence entre un objectif et un résultat (sortie) pour un système ?",qa:"ما الفرق بين الهدف والنتيجة (المخرج) في النظام؟",
+       solutionFr:"• Objectif : but fixé d'avance, connu avant le fonctionnement.\n• Résultat : sortie produite après transformation des entrées.\n• Le contrôle compare résultat et objectif → actions correctives si écart.",
+       solutionAr:"• الهدف: غاية محددة مسبقاً، معروفة قبل التشغيل.\n• النتيجة: مخرج ينتجه النظام بعد المعالجة.\n• الرقابة = مقارنة النتيجة بالهدف ← إجراءات تصحيحية.",
+       methodFr:"Clé : l'objectif est prospectif (avant), le résultat est rétrospectif (après).",
+       methodAr:"المفتاح: الهدف استشرافي (قبل)، النتيجة استرجاعية (بعد)."},
+    ],
+    exercises:[
+      {num:1,titleFr:"Schéma du système Stock",titleAr:"مخطط نظام المخزون",difficulty:"facile",
+       statementFr:"Donner un schéma du système (entrées, sorties, transformation, objectif et contrôle) pour le système stock.",
+       statementAr:"أعطِ مخططاً للنظام (مدخلات، مخرجات، تحويل، هدف ورقابة) لنظام المخزون.",
+       solutionFr:"Objectif : Maintenir la disponibilité des produits.\n\nEntrées :\n• Marchandises reçues\n• Liste des fournisseurs\n\nTransformation :\n• Tenue du stock, Approvisionnement\n\nSorties :\n• Commandes d'approvisionnement\n• État du stock\n\nContrôle :\n• Vérification du stock au seuil minimum\n• Si stock < seuil critique → action corrective",
+       solutionAr:"الهدف: الحفاظ على توفر المنتجات.\n\nالمدخلات:\n• البضاعة الواردة\n• قائمة الموردين\n\nالتحويل:\n• تسيير المخزون، التزويد\n\nالمخرجات:\n• أوامر التزويد\n• حالة المخزون\n\nالرقابة:\n• التحقق عند الحد الأدنى\n• إذا كان المخزون < الحد الحرج ← إجراء تصحيحي",
+       methodFr:"1. Identifier l'OBJECTIF\n2. Lister les ENTRÉES\n3. Décrire la TRANSFORMATION\n4. Définir SORTIES + CONTRÔLE",
+       methodAr:"1. حدّد الهدف\n2. أدرج المدخلات\n3. صِف التحويل\n4. حدّد المخرجات والرقابة"},
+      {num:2,titleFr:"Les trois sous-systèmes — Journal de presse",titleAr:"الأنظمة الثلاثة — جريدة صحفية",difficulty:"moyen",
+       statementFr:"Situer les trois systèmes composant une entreprise de production : cas d'un journal de presse.",
+       statementAr:"حدّد الأنظمة الثلاثة المكوّنة لمؤسسة إنتاجية: حالة جريدة صحفية.",
+       solutionFr:"Pilotage : Directeur général + conseil → politique éditoriale et objectifs.\n\nS.I. : Agents administratifs, procédures de gestion (circulation des articles, décisions de publication).\n\nOpérant : Journalistes (rédaction), ouvriers d'impression, ensemble des exécutants.",
+       solutionAr:"التوجيه: المدير العام + مجلس الإدارة ← السياسة التحريرية.\n\nالـ S.I.: الأعوان الإداريون، قواعد التسيير (تداول المقالات، قرارات النشر).\n\nالتشغيل: الصحفيون (كتابة المقالات)، عمال الطباعة، مجموع المنفذين.",
+       methodFr:"• Qui DÉCIDE ? → Pilotage\n• Qui EXÉCUTE ? → Opérant\n• Qui COLLECTE/TRANSMET les infos ? → S.I.",
+       methodAr:"• من يُقرّر؟ ← التوجيه\n• من يُنفّذ؟ ← التشغيل\n• من يجمع وينقل؟ ← نظام المعلومات"},
+    ]
+  },
+  {
+    lessonId:2,
+    reflections:[
+      {qf:"Parmi ces informations, lesquelles sont formelles et lesquelles sont informelles ?",qa:"من بين هذه المعلومات، أيّها رسمية وأيّها غير رسمية؟",
+       solutionFr:"Informelles : rumeur sur les prix, prix transmis par téléphone, commande orale.\nFormelles : bilan comptable, états écrits des fournisseurs.",
+       solutionAr:"غير رسمية: إشاعة الأسعار، أسعار هاتفية، طلب شفهي.\nرسمية: ميزانية محاسبية، وثائق مكتوبة للموردين.",
+       methodFr:"Règle : une information est FORMELLE si elle est portée par un document officiel (facture, bilan...). Sinon → informelle.",
+       methodAr:"قاعدة: المعلومة رسمية إذا حملتها وثيقة رسمية. وإلا ← غير رسمية."},
+    ],
+    exercises:[
+      {num:1,titleFr:"Procédure de recrutement — Fonctions du S.I.",titleAr:"إجراء التوظيف — وظائف نظام المعلومات",difficulty:"moyen",
+       statementFr:"Donner le schéma des différentes fonctions du S.I. concernant la procédure de recrutement d'un employé.",
+       statementAr:"أعطِ مخطط وظائف نظام المعلومات المتعلق بإجراء توظيف موظف.",
+       solutionFr:"Collecte : Réception des dossiers de candidature, liste des candidats.\n\nMémorisation : Création du fichier des demandes d'emploi.\n\nTraitement : Présélection, numérotation, convocations, lettres de regret, PV d'installation.\n\nTransmission : Dossiers → Directeur ; Convocations → candidats retenus ; Lettres → non retenus.",
+       solutionAr:"الجمع: استقبال ملفات الترشح.\n\nالتخزين: إنشاء ملف طلبات العمل.\n\nالمعالجة: الانتقاء، الترقيم، الاستدعاءات، رسائل الرفض، محضر التنصيب.\n\nالنقل: الملفات ← المدير؛ الاستدعاءات ← المقبولون؛ الرسائل ← المرفوضون.",
+       methodFr:"1. COLLECTER → données brutes\n2. MÉMORISER → stockage\n3. TRAITER → opérations\n4. TRANSMETTRE → qui reçoit quoi",
+       methodAr:"1. الجمع ← بيانات خام\n2. التخزين ← حفظ\n3. المعالجة ← عمليات\n4. النقل ← من يستقبل ماذا"},
+    ]
+  },
+  {
+    lessonId:3,
+    reflections:[],
+    exercises:[
+      {num:1,titleFr:"Déterminer le S.I.A. — Société de vente électronique",titleAr:"تحديد S.I.A — شركة بيع إلكتروني",difficulty:"difficile",
+       statementFr:"Une société vend des produits électroniques sur 20 secteurs géographiques. Activités : liste clients, rapports de visite, notes de frais, paie mensuelle avec commissions, liste et rapports après-vente, état mensuel suivi. Déterminer le S.I.A.",
+       statementAr:"شركة تبيع منتجات إلكترونية على 20 قطاعاً. الأنشطة: قائمة العملاء، تقارير الزيارة، مصاريف، رواتب + عمولات، قائمة ما بعد البيع، حالة المتابعة. حدّد S.I.A.",
+       solutionFr:"Tâches automatisables (S.I.A.) :\n1. Consultation fichier CLIENT-PROSPECT → sur ordinateur\n2. Liste mensuelle clients → édition automatique\n3. Rapport de visite → saisie des rapports\n4. Mise à jour fichier CLIENT → automatique dès saisie\n5. Saisie commandes + mise à jour fichier commandes\n6. Échéancier machines à livrer → automatique\n7. Relevé hebdomadaire → édition automatique\n8. Calcul de la paie → calcul automatique + commissions + édition fiches\n9. Liste après-vente → édition automatique\n10. Rapports après-vente → saisie + mise à jour état suivi\n11. État mensuel suivi → édition automatique",
+       solutionAr:"المهام القابلة للأتمتة (S.I.A.):\n1. استشارة ملف العملاء ← على الحاسوب\n2. القائمة الشهرية ← طباعة آلية\n3. تقرير الزيارة ← إدخال البيانات\n4. تحديث الملف ← آلي فور الإدخال\n5. إدخال الطلبات + تحديث الملف\n6. جدول التسليم ← آلي\n7. الكشف الأسبوعي ← طباعة آلية\n8. حساب الرواتب + العمولات ← آلي\n9. قائمة ما بعد البيع ← طباعة آلية\n10. تقارير ما بعد البيع ← إدخال + تحديث\n11. حالة المتابعة ← طباعة آلية",
+       methodFr:"1. Lister TOUTES les tâches\n2. Chaque tâche suit-elle des règles précises et répétitives ?\n3. Oui → S.I.A. | Non → non automatisable\n4. Reformuler : Saisie / Édition / Calcul automatique",
+       methodAr:"1. أدرج جميع المهام\n2. هل تتبع قواعد محددة ومتكررة؟\n3. نعم ← S.I.A. | لا ← غير قابلة\n4. أعد الصياغة: إدخال / طباعة / حساب آلي"},
+    ]
+  },
+  {
+    lessonId:4,
+    reflections:[
+      {qf:"La paie représente-t-elle un domaine d'activité à elle seule ? (Vrai/Faux)",qa:"هل تُشكّل الأجور مجالاً مستقلاً؟ (صح/خطأ)",
+       solutionFr:"FAUX. La paie est une ACTIVITÉ du domaine COMPTABILITÉ, pas un domaine en soi.",
+       solutionAr:"خطأ. الأجور نشاط ضمن مجال المحاسبة، وليست مجالاً مستقلاً.",
+       methodFr:"Distinguez DOMAINE (ensemble d'activités liées) et ACTIVITÉ (tâche précise à l'intérieur d'un domaine).",
+       methodAr:"ميّز بين المجال (مجموعة أنشطة) والنشاط (مهمة محددة داخل المجال)."},
+    ],
+    exercises:[
+      {num:4,titleFr:"Graphe des flux — Bibliothèque",titleAr:"مخطط التدفق — مكتبة",difficulty:"moyen",
+       statementFr:"Acteurs : Directeur, Réceptionniste, Abonnés, Maisons d'éditions, Libraire. Construire le graphe des flux d'informations.",
+       statementAr:"الأطراف: المدير، الاستقبال، المشتركون، دور النشر، بائع الكتب. أنشئ مخطط تدفق المعلومات.",
+       solutionFr:"Acteurs retenus (4) : Directeur, Réceptionniste, Abonné, Maisons d'éditions.\n⚠️ Libraire EXCLU : aucun flux.\n\nFlux :\n1. Suggestion (Abonné → Directeur)\n2. Indice de vente (Maisons d'éditions → Directeur)\n3. Fréquence d'emprunts (Réceptionniste → Directeur)\n4-8. Demandes (Abonné → Réceptionniste)\n9. Lettre de remboursement (Réceptionniste → Abonné)",
+       solutionAr:"الأطراف المُحتفَظ بهم (4): المدير، الاستقبال، المشترك، دور النشر.\n⚠️ بائع الكتب مُستبعَد: لا يتبادل أي تدفق.\n\nالتدفقات:\n1. اقتراح (مشترك ← مدير)\n2. مؤشر مبيعات (دور النشر ← مدير)\n3. تكرار الإعارة (استقبال ← مدير)\n4-8. طلبات (مشترك ← استقبال)\n9. رسالة استرداد (استقبال ← مشترك)",
+       methodFr:"1. Identifier tous les acteurs\n2. Éliminer ceux sans flux\n3. Pour chaque flux : émetteur → récepteur + nom du document\n4. Dessiner rectangles + flèches numérotées",
+       methodAr:"1. حدّد جميع الأطراف\n2. استبعد من لا يتبادل تدفقات\n3. لكل تدفق: مُرسِل ← مُستقبِل + اسم الوثيقة\n4. ارسم مستطيلات + أسهم مرقّمة"},
+    ]
+  },
+  {
+    lessonId:5,
+    reflections:[],
+    exercises:[
+      {num:1,titleFr:"Domaines d'activité — Usine, Hôpital, Banque",titleAr:"مجالات النشاط — مصنع، مستشفى، بنك",difficulty:"facile",
+       statementFr:"Identifier les domaines d'activité pour : une Usine, un Hôpital, une Banque.",
+       statementAr:"حدّد مجالات النشاط لـ: مصنع، مستشفى، بنك.",
+       solutionFr:"Usine : Stocks — Comptabilité — Personnel — Technique — Ventes — Approvisionnements\n\nHôpital : Admissions — Comptabilité — Personnel — Technique — Recherche\n\nBanque : Comptabilité — Personnel — Crédits",
+       solutionAr:"مصنع: المخزون — المحاسبة — الموارد البشرية — التقنية — المبيعات — التزويد\n\nمستشفى: الاستقبال — المحاسبة — الموارد البشرية — التقنية — البحث\n\nبنك: المحاسبة — الموارد البشرية — القروض",
+       methodFr:"1. Quelles sont les grandes FONCTIONS ?\n2. Chaque grande fonction = un domaine\n3. Vérifier indépendance relative",
+       methodAr:"1. ما الوظائف الكبرى؟\n2. كل وظيفة = مجال\n3. تحقق من الاستقلالية النسبية"},
+    ]
+  },
+  {
+    lessonId:6,
+    reflections:[],
+    exercises:[
+      {num:1,titleFr:"MCD — Direction des études (Université)",titleAr:"النموذج المفاهيمي — مديرية الدراسات",difficulty:"difficile",
+       statementFr:"Règles : un enseignant peut enseigner plusieurs modules ; une section est prise en charge par plusieurs enseignants ; un étudiant ne peut pas changer de section ; le coefficient d'un module change selon la filière. Construire le MCD.",
+       statementAr:"القواعد: أستاذ يدرّس وحدة أو أكثر؛ قسم يُشرف عليه عدة أساتذة؛ الطالب لا يغيّر قسمه؛ معامل الوحدة يتغير حسب الشعبة. أنشئ المفاهيمي للبيانات.",
+       solutionFr:"Entités : ÉTUDIANT, ENSEIGNANT, MODULE, SECTION, FILIÈRE, EXAMEN\n\nAssociations :\n• ENSEIGNER : ENSEIGNANT(1,n) ↔ MODULE(1,n)\n• AFFECTER : ENSEIGNANT(1,n) ↔ SECTION(1,n)\n• APPARTENIR1 : ÉTUDIANT(1,1) ↔ SECTION(1,n)\n• APPARTENIR2 : SECTION(1,1) ↔ FILIÈRE(1,n)\n• NOTATION (ternaire) : ÉTUDIANT(1,n) ↔ MODULE(1,n) ↔ EXAMEN(1,n) [Note]\n• A_POUR_COEFFICIENT : MODULE(1,n) ↔ FILIÈRE(1,n) [Coefficient]\n\n⚠️ 'Coefficient' est propriété de l'association MODULE-FILIÈRE, pas du module seul.",
+       solutionAr:"الكيانات: طالب، أستاذ، وحدة، قسم، شعبة، امتحان\n\nالعلاقات:\n• تدريس: أستاذ(1,n) ↔ وحدة(1,n)\n• تكليف: أستاذ(1,n) ↔ قسم(1,n)\n• انتماء1: طالب(1,1) ↔ قسم(1,n)\n• انتماء2: قسم(1,1) ↔ شعبة(1,n)\n• نقطة (ثلاثية): طالب(1,n) ↔ وحدة(1,n) ↔ امتحان(1,n) [النقطة]\n• معامل: وحدة(1,n) ↔ شعبة(1,n) [المعامل]\n\n⚠️ 'المعامل' خاصية العلاقة وحدة-شعبة، لا للوحدة منفردة.",
+       methodFr:"1. IDENTIFIER entités\n2. IDENTIFIER associations (règles de gestion)\n3. PROPRIÉTÉS : entité ou association ?\n4. CARDINALITÉS : min et max\n5. VÉRIFIER : propriété qui dépend de 2 entités → association",
+       methodAr:"1. حدّد الكيانات\n2. حدّد العلاقات (قواعد التسيير)\n3. الخصائص: لكيان أم لعلاقة؟\n4. درجات العلاقة: الحد الأدنى والأقصى\n5. تحقق: خاصية لكيانين ← خاصية العلاقة"},
+    ]
+  },
+];
+
+// Build SR card pool
+const SR_CARDS=BOOK.flatMap(L=>L.concepts.map((c,i)=>({
+  id:`L${L.id}_C${i}`,lessonId:L.id,lessonFr:L.fr,lessonAr:L.ar,
+  fr:c.fr,ar:c.ar,df:c.df,da:c.da,ef:c.ef,ea:c.ea
+})));
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let state={
+  page:"home",dark:true,showAr:true,xp:0,
+  lessonIdx:0,stepIdx:0,steps:[],
+  correct:0,total:0,done:{},
+  srData:{},srQueue:[],srIdx:0,srSessionDone:false,
+  // lesson-level temps
+  cardFlipped:false,quizChosen:null,
+  chatText:"",chatPrompt:"",chatAnswer:"",chatCopied:false,chatSaved:"",
+  exprText:"",exprPrompt:"",exprCopied:false,exprConcept:null,
+  tdTab:"reflections",tdExIdx:0,tdExShowSol:false,tdRefIdx:0,tdRefShowSol:false,
+  srRevealed:false,srGradeToast:null,
+  planScenario:"fr",
+};
+
+// ═══════════════════════════════════════
+// SM-2 HELPERS
+// ═══════════════════════════════════════
+function srUpdate(prev,grade){
+  const ef=Math.max(MIN_EASE,(prev.easeFactor||2.5)+(EASE_DELTA[grade]||0));
+  const days=grade==="again"?1:Math.round((SR_INTERVALS[grade]||1)*ef);
+  return{interval:days,easeFactor:ef,nextReview:Date.now()+days*86400000,lapses:grade==="again"?(prev.lapses||0)+1:(prev.lapses||0),lastReview:Date.now()};
+}
+function getDueCards(cards,srData){
+  const now=Date.now();
+  return cards.filter(c=>{const d=srData[c.id];return!d||d.nextReview<=now;})
+    .sort((a,b)=>(srData[a.id]?.nextReview||0)-(srData[b.id]?.nextReview||0));
+}
+function daysLabel(ts){
+  const diff=ts-Date.now();
+  if(diff<=0)return"Maintenant · الآن";
+  const d=Math.ceil(diff/86400000);
+  return d===1?"Demain · غداً":`Dans ${d}j · بعد ${d} أيام`;
+}
+function dueCount(){return getDueCards(SR_CARDS,state.srData).length;}
+
+// ═══════════════════════════════════════
+// BUILD STEPS
+// ═══════════════════════════════════════
+function buildSteps(L){
+  const s=[{t:"intro"}];
+  L.concepts.forEach((c,i)=>s.push({t:"card",c,i,total:L.concepts.length}));
+  L.quizzes.forEach(q=>s.push({t:"quiz",q}));
+  s.push({t:"chat"},{t:"expr"});
+  const tdData=TD.find(t=>t.lessonId===L.id);
+  if(tdData&&(tdData.exercises.length>0||tdData.reflections.length>0))s.push({t:"td",tdData});
+  return s;
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+let toastTimer=null;
+function showToast(msg,color=GOLD){
+  const el=document.getElementById("toast");
+  el.textContent=msg;el.style.color=color;el.style.background=state.dark?"#1e2029":"#fff";
+  el.style.border=`1px solid ${color}`;el.style.display="block";
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{el.style.display="none";},2000);
+}
+function addXP(n){state.xp+=n;showToast(`+${n} XP ⭐`,GOLD);render();}
+
+// ═══════════════════════════════════════
+// THEME HELPERS
+// ═══════════════════════════════════════
+function th(){
+  const dark=state.dark;
+  return{
+    bg:dark?"#0e0f14":"#f4f5fb",surf:dark?"#16181f":"#fff",
+    surf2:dark?"#1e2029":"#eef0f7",bdr:dark?"#2a2d3a":"#dde0ee",
+    txt:dark?"#e8eaf0":"#1a1d2e",dim:dark?"#8b8fa8":"#6b6f88"
+  };
+}
+
+// ═══════════════════════════════════════
+// MARKUP HELPERS
+// ═══════════════════════════════════════
+function card(inner,extra=""){
+  const t=th();
+  return `<div style="background:${t.surf};border:1px solid ${t.bdr};border-radius:14px;padding:22px;margin-bottom:14px;border-top:3px solid ${A};${extra}">${inner}</div>`;
+}
+function tag(label){
+  return `<div style="display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${A};margin-bottom:14px;"><div style="width:5px;height:5px;border-radius:50%;background:${A}"></div>${label}</div>`;
+}
+function btn(label,onclick,extra=""){
+  return `<button onclick="${onclick}" style="background:linear-gradient(135deg,${A},${A2});color:#fff;border:none;border-radius:11px;padding:13px 22px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;flex:1;min-width:120px;${extra}">${label}</button>`;
+}
+function secBtn(label,onclick,extra=""){
+  const t=th();
+  return `<button onclick="${onclick}" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:11px;padding:11px 15px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;${extra}">${label}</button>`;
+}
+function diffBadge(d){
+  const map={facile:[GREEN,"Facile · سهل"],moyen:[GOLD,"Moyen · متوسط"],difficile:[RED,"Difficile · صعب"]};
+  const [c,l]=map[d]||[A,d];
+  return `<span style="font-size:11px;background:${c}22;color:${c};border-radius:100px;padding:3px 10px;font-weight:700;">${l}</span>`;
+}
+
+// ═══════════════════════════════════════
+// PAGES
+// ═══════════════════════════════════════
+
+function renderHome(){
+  const t=th();const dc=dueCount();
+  let lessons=BOOK.map((L,i)=>{
+    const lCards=SR_CARDS.filter(c=>c.lessonId===L.id);
+    const lDue=getDueCards(lCards,state.srData).length;
+    const isDone=state.done[i];
+    return `<button onclick="startLesson(${i})" style="background:${t.surf};border:2px solid ${isDone?GREEN:t.bdr};border-radius:13px;padding:16px;cursor:pointer;text-align:left;color:${t.txt};font-family:inherit;transition:all .15s;position:relative;">
+      <div style="font-size:10px;font-weight:700;color:${A};letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">Leçon ${L.id}</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:3px;">${L.fr}</div>
+      ${state.showAr?`<div class="ar" style="font-size:12px;color:${t.dim};direction:rtl;">${L.ar}</div>`:""}
+      <div style="font-size:11px;color:${t.dim};margin-top:5px;line-height:1.6;">${L.tpf.join(" · ")}</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+        ${isDone?`<span style="font-size:11px;color:${GREEN};font-weight:700;">✓ Terminée</span>`:""}
+        ${lDue>0?`<span style="font-size:10px;background:rgba(52,211,153,.15);color:${GREEN};border-radius:100px;padding:2px 8px;font-weight:700;">🧠 ${lDue}</span>`:""}
+      </div>
+    </button>`;
+  }).join("");
+
+  const srBanner=dc>0?`<button onclick="startSR()" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.35);border-radius:14px;padding:14px 20px;margin-bottom:20px;cursor:pointer;font-family:inherit;color:${t.txt};">
+    <div style="text-align:left;">
+      <div style="font-size:13px;font-weight:700;color:${GREEN};">🧠 ${dc} carte${dc>1?"s":""} à réviser aujourd'hui</div>
+      ${state.showAr?`<div class="ar" style="font-size:12px;color:${t.dim};direction:rtl;">${dc} بطاقة للمراجعة اليوم</div>`:""}
+    </div>
+    <div style="background:${GREEN};color:#fff;border-radius:100px;padding:6px 16px;font-size:12px;font-weight:700;white-space:nowrap;">Réviser →</div>
+  </button>`:
+  Object.keys(state.srData).length>0?`<div style="background:${t.surf};border:1px solid ${t.bdr};border-radius:14px;padding:12px 18px;margin-bottom:20px;font-size:13px;color:${t.dim};display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">✅</span><div style="text-align:left;"><span style="font-weight:700;color:${GREEN};">Toutes les révisions sont à jour !</span>${state.showAr?`<div class="ar" style="direction:rtl;font-size:12px;margin-top:2px;">كل المراجعات محدّثة!</div>`:""}</div></div>`:"";
+
+  document.getElementById("root").innerHTML=`
+  <div style="background:${t.bg};min-height:100vh;color:${t.txt};font-family:'Syne',sans-serif;padding:60px 20px 40px;">
+    <div style="position:fixed;top:12px;right:12px;display:flex;gap:8px;z-index:999;">
+      <button onclick="toggleAr()" style="background:${t.surf};border:1px solid ${t.bdr};color:${t.txt};border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">🌐 ${state.showAr?"FR only":"عربي"}</button>
+      <button onclick="toggleDark()" style="background:${t.surf};border:1px solid ${t.bdr};color:${t.txt};border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">${state.dark?"🌙":"☀️"}</button>
+    </div>
+    <div style="max-width:700px;margin:0 auto;text-align:center;">
+      <div style="display:inline-block;background:${t.surf2};border:1px solid ${t.bdr};border-radius:100px;padding:5px 16px;font-size:11px;color:${t.dim};margin-bottom:22px;">📚 <b style="color:${A}">Pages Bleues</b> · Introduction aux Systèmes d'Information</div>
+      <h1 style="font-size:clamp(26px,5vw,46px);font-weight:800;line-height:1.2;margin-bottom:10px;">Maîtrisez les <span style="background:linear-gradient(135deg,${A},${A2});-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Systèmes d'Information</span></h1>
+      <p style="color:${t.dim};font-size:14px;line-height:1.8;margin-bottom:20px;">Parcours adaptatif · Compréhension profonde · Expression fluide${state.showAr?`<span class="ar" style="display:block;direction:rtl;font-size:13px;margin-top:3px;">مسار تعلّم · فهم عميق · تعبير طليق</span>`:""}</p>
+      ${srBanner}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:26px;text-align:left;">${lessons}</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="startLesson(0)" style="background:linear-gradient(135deg,${A},${A2});color:#fff;border:none;border-radius:13px;padding:15px 36px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">▶ Commencer le parcours</button>
+        ${Object.keys(state.srData).length>0?`<button onclick="startSR()" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.txt};border-radius:13px;padding:15px 24px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">🧠 Révision${dc>0?` (${dc})`:""}</button>`:""}
+        <button onclick="goPage('plan')" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.txt};border-radius:13px;padding:15px 24px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">📋 Plan d'étude</button>
+        <button onclick="goPage('td-browse')" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.txt};border-radius:13px;padding:15px 24px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">✏️ Travaux dirigés</button>
+      </div>
+      <div style="color:${t.dim};font-size:11px;margin-top:16px;">⭐ ${state.xp} XP total</div>
+    </div>
+  </div>`;
+}
+
+function renderDone(){
+  const t=th();const L=BOOK[state.lessonIdx];
+  document.getElementById("root").innerHTML=`
+  <div style="background:${t.bg};min-height:100vh;color:${t.txt};font-family:'Syne',sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="max-width:480px;width:100%;text-align:center;" class="fade">
+      <div style="font-size:64px;margin-bottom:16px;">🏆</div>
+      <div style="font-size:30px;font-weight:800;background:linear-gradient(135deg,${GOLD},#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;">Leçon accomplie !</div>
+      ${state.showAr?`<div class="ar" style="font-size:17px;color:${t.dim};margin-bottom:8px;">أحسنت! أكملت هذا الدرس</div>`:""}
+      <div style="color:${t.dim};font-size:14px;line-height:1.8;margin-bottom:20px;">Leçon <b>${L.fr}</b> terminée ! ${state.correct}/${state.total} bonnes réponses.</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;">
+        ${[`⭐ +${state.correct*10} XP`,`✅ ${state.correct}/${state.total}`,`📚 ${L.concepts.length} concepts`].map(t2=>`<div style="background:${t.surf};border:1px solid ${t.bdr};border-radius:100px;padding:9px 20px;font-weight:700;font-size:13px;">${t2}</div>`).join("")}
+      </div>
+      <button onclick="goPage('home')" style="background:linear-gradient(135deg,${A},${A2});color:#fff;border:none;border-radius:13px;padding:14px 32px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">← Retour aux leçons</button>
+    </div>
+  </div>`;
+}
+
+// ─── LESSON HEADER ───
+function lessonHeader(){
+  const t=th();const L=BOOK[state.lessonIdx];
+  const pct=state.steps.length?(state.stepIdx/state.steps.length)*100:0;
+  return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${t.surf};border-bottom:1px solid ${t.bdr};position:sticky;top:0;z-index:10;">
+    <button onclick="goPage('home')" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:10px;padding:7px 13px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;">← Retour</button>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Leçon ${L.id} — ${L.fr}</div>
+      ${state.showAr?`<div class="ar" style="font-size:11px;color:${t.dim};direction:rtl;">الدرس ${L.id} — ${L.ar}</div>`:""}
+    </div>
+    <div style="flex:2;">
+      <div style="height:6px;background:${t.surf2};border-radius:100px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${A},${A2});border-radius:100px;transition:width .4s;"></div></div>
+      <div style="font-size:10px;color:${t.dim};text-align:center;margin-top:3px;">${state.stepIdx}/${state.steps.length}</div>
+    </div>
+    <div style="background:${t.surf2};border:1px solid ${t.bdr};border-radius:100px;padding:5px 12px;font-size:13px;font-weight:700;color:${GOLD};white-space:nowrap;">⭐ ${state.xp}</div>
+  </div>`;
+}
+
+// ─── STEP: INTRO ───
+function stepIntro(){
+  const t=th();const L=BOOK[state.lessonIdx];
+  return `
+  ${tag("Début de leçon · بداية الدرس")}
+  <div style="font-size:clamp(16px,3vw,22px);font-weight:800;margin-bottom:5px;">Leçon ${L.id} : ${L.fr}</div>
+  ${state.showAr?`<div class="ar" style="font-size:clamp(13px,2.5vw,17px);color:${t.dim};direction:rtl;margin-bottom:20px;">الدرس ${L.id}: ${L.ar}</div>`:""}
+  ${card(`<div style="display:grid;grid-template-columns:${state.showAr?"1fr 1fr":"1fr"};gap:16px;">
+    <div style="border-right:${state.showAr?`1px solid ${t.bdr}`:"none"};padding-right:${state.showAr?"16px":"0"};">
+      <div style="font-size:10px;font-weight:700;color:${A};letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px;">🇫🇷 Au programme</div>
+      <div style="font-size:13px;line-height:1.8;">${L.tpf.map(t=>`<div>· ${t}</div>`).join("")}<br><b>${L.concepts.length} concepts · ${L.quizzes.length} exercices</b></div>
+    </div>
+    ${state.showAr?`<div style="direction:rtl;font-family:'Tajawal',sans-serif;">
+      <div style="font-size:10px;font-weight:700;color:${A};letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px;">🇩🇿 المحتوى</div>
+      <div style="font-size:13px;line-height:1.8;">${L.tpa.map(t=>`<div>· ${t}</div>`).join("")}<br><b>${L.concepts.length} مفاهيم · ${L.quizzes.length} تمارين</b></div>
+    </div>`:""}
+  </div>`)}
+  <div style="display:flex;gap:10px;">${btn("C'est parti → انطلق","nextStep()")}</div>`;
+}
+
+// ─── STEP: CARD ───
+function stepCard(){
+  const t=th();const step=state.steps[state.stepIdx];const c=step.c;const flipped=state.cardFlipped;
+  return `
+  ${tag(`Concept ${step.i+1}/${step.total}`)}
+  <div style="font-size:clamp(16px,3vw,22px);font-weight:800;margin-bottom:5px;">Cliquez sur la carte pour voir la définition</div>
+  ${state.showAr?`<div class="ar" style="color:${t.dim};direction:rtl;margin-bottom:18px;font-size:15px;">انقر على البطاقة للتعريف</div>`:""}
+  <div onclick="flipCard()" style="cursor:pointer;min-height:180px;background:${t.surf};border:1px solid ${t.bdr};border-radius:14px;padding:24px;margin-bottom:18px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;border-bottom:3px solid ${flipped?A2:A};transition:all .3s;user-select:none;">
+    ${!flipped?`
+      <div style="font-size:22px;font-weight:800;color:${A};">${c.fr}</div>
+      ${state.showAr?`<div class="ar" style="font-size:17px;color:${A2};">${c.ar}</div>`:""}
+      <div style="font-size:10px;color:${t.dim};letter-spacing:.06em;margin-top:6px;">Cliquer · انقر</div>
+    `:`
+      <div style="width:100%;text-align:left;">
+        <div style="font-size:13px;line-height:1.8;margin-bottom:8px;"><b style="color:${A};">${c.fr}</b><br>${c.df}</div>
+        ${state.showAr?`<div class="ar" style="font-size:13px;line-height:1.8;direction:rtl;color:${t.dim};margin-bottom:8px;"><b style="color:${A2};">${c.ar}</b><br>${c.da}</div>`:""}
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed ${t.bdr};font-size:12px;color:${t.dim};font-style:italic;">
+          📌 ${c.ef}
+          ${state.showAr?`<div class="ar" style="direction:rtl;margin-top:4px;">📌 ${c.ea}</div>`:""}
+        </div>
+      </div>
+    `}
+  </div>
+  <div style="display:flex;gap:10px;">
+    ${secBtn("Voir · اعرض","flipCard()")}
+    ${btn("Compris → فهمت","cardNext()")}
+  </div>`;
+}
+
+// ─── STEP: QUIZ ───
+function stepQuiz(){
+  const t=th();const q=state.steps[state.stepIdx].q;const chosen=state.quizChosen;
+  const optColor=(i)=>{
+    if(chosen===null)return t.bdr;
+    if(i===q.ans)return GREEN;
+    if(i===chosen)return RED;
+    return t.bdr;
+  };
+  const optBg=(i)=>{
+    if(chosen===null)return t.surf;
+    if(i===q.ans)return"rgba(52,211,153,.08)";
+    if(i===chosen)return"rgba(248,113,113,.08)";
+    return t.surf;
+  };
+  const optColor2=(i)=>{
+    if(chosen!==null&&i===q.ans)return GREEN;
+    if(chosen===i&&i!==q.ans)return RED;
+    return t.txt;
+  };
+  return `
+  ${tag("Question")}
+  <div style="font-size:clamp(16px,3vw,22px);font-weight:800;margin-bottom:5px;">${q.qf}</div>
+  ${state.showAr?`<div class="ar" style="color:${t.dim};direction:rtl;margin-bottom:20px;font-size:15px;">${q.qa}</div>`:""}
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+    ${q.of.map((o,i)=>`<button onclick="${chosen===null?`chooseQuiz(${i})`:""}" ${chosen!==null?"disabled":""} style="background:${optBg(i)};border:2px solid ${optColor(i)};border-radius:11px;padding:12px 16px;text-align:left;font-size:13px;font-family:inherit;color:${optColor2(i)};cursor:${chosen!==null?"default":"pointer"};transition:all .15s;">
+      <div style="font-weight:600;">${o}</div>
+      ${state.showAr?`<div class="ar" style="font-size:12px;color:${t.dim};direction:rtl;margin-top:2px;">${q.oa[i]}</div>`:""}
+    </button>`).join("")}
+  </div>
+  ${chosen!==null?`<div style="border-radius:11px;padding:14px 18px;margin-bottom:14px;background:${chosen===q.ans?"rgba(52,211,153,.07)":"rgba(248,113,113,.07)"};border:1px solid ${chosen===q.ans?"rgba(52,211,153,.3)":"rgba(248,113,113,.3)"};">
+    <div style="font-weight:800;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:${chosen===q.ans?GREEN:RED};margin-bottom:5px;">${chosen===q.ans?"✓ Correct !":"✗ Pas tout à fait"}</div>
+    <div style="font-size:13px;line-height:1.8;">${q.ef}</div>
+    ${state.showAr?`<div class="ar" style="direction:rtl;color:${t.dim};font-size:13px;border-top:1px dashed ${t.bdr};padding-top:7px;margin-top:6px;">${q.ea}</div>`:""}
+  </div>`:""}
+  <button onclick="nextStep()" ${chosen===null?"disabled":""} style="width:100%;background:${chosen!==null?`linear-gradient(135deg,${A},${A2})`:t.surf2};color:${chosen!==null?"#fff":t.dim};border:1px solid ${t.bdr};border-radius:11px;padding:13px 20px;font-family:inherit;font-size:14px;font-weight:700;cursor:${chosen!==null?"pointer":"default"};opacity:${chosen===null?.4:1};">
+    Continuer → التالي
+  </button>`;
+}
+
+// ─── STEP: CHAT ───
+function stepChat(){
+  const t=th();const L=BOOK[state.lessonIdx];
+  const concepts=L.concepts.map(c=>`- ${c.fr} (${c.ar}): ${c.df}`).join("\n");
+  const suggs=[
+    `Expliquez "${L.concepts[0]?.fr}" avec un exemple concret du monde réel`,
+    `Différence entre "${L.concepts[0]?.fr}" et "${L.concepts[1]?.fr}" ?`,
+    `Application de ces concepts dans une entreprise moderne ?`
+  ];
+  return `
+  ${tag("Approfondissement · استفسار")}
+  <div style="font-size:clamp(16px,3vw,22px);font-weight:800;margin-bottom:5px;">Posez une question sur cette leçon</div>
+  ${state.showAr?`<div class="ar" style="color:${t.dim};direction:rtl;margin-bottom:18px;font-size:15px;">هل لديك سؤال على هذا الدرس؟</div>`:""}
+  ${card(`<div style="font-size:13px;color:${t.dim};"><b>Mode hors-ligne ·</b> Générez le prompt → copiez → collez dans Claude → collez la réponse ici.${state.showAr?`<div class="ar" style="direction:rtl;margin-top:4px;"><b>بدون إنترنت ·</b> اصنع الرسالة ← انسخها ← الصقها في Claude ← الصق الإجابة هنا.</div>`:""}</div>`,`padding:14px;`)}
+  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;">
+    ${suggs.map((sg,i)=>`<button onclick="setChatSugg(${i})" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:9px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;">${sg.substring(0,40)}...</button>`).join("")}
+  </div>
+  <textarea id="chatText" oninput="state.chatText=this.value" placeholder="Votre question..." style="width:100%;background:${t.surf};border:2px solid ${t.bdr};border-radius:11px;padding:11px 14px;color:${t.txt};font-size:14px;font-family:inherit;resize:vertical;min-height:65px;line-height:1.7;margin-bottom:10px;display:block;box-sizing:border-box;">${state.chatText}</textarea>
+  ${state.chatPrompt?`<div style="background:${t.surf};border:1px solid ${t.bdr};border-radius:13px;padding:16px;margin-bottom:12px;">
+    <div style="font-size:11px;color:${t.dim};margin-bottom:8px;font-weight:600;letter-spacing:.05em;">📋 Prompt prêt — coller dans Claude :</div>
+    <div style="font-size:12px;line-height:1.8;background:${t.surf2};padding:10px;border-radius:8px;margin-bottom:12px;white-space:pre-wrap;max-height:180px;overflow-y:auto;font-family:monospace;">${state.chatPrompt}</div>
+    <button onclick="copyChatPrompt()" style="background:${state.chatCopied?`linear-gradient(135deg,${GREEN},#059669)`:`linear-gradient(135deg,${A},${A2})`};color:#fff;border:none;border-radius:9px;padding:8px 16px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">${state.chatCopied?"✓ Copié! تم النسخ":"📋 Copier · انسخ"}</button>
+  </div>`:""}
+  <textarea id="chatAnswer" oninput="state.chatAnswer=this.value" placeholder="Coller ici la réponse de Claude (اختياري)" style="width:100%;background:${t.surf};border:2px solid ${t.bdr};border-radius:11px;padding:11px 14px;color:${t.txt};font-size:14px;font-family:'Tajawal',sans-serif;resize:vertical;min-height:65px;line-height:1.7;margin-bottom:10px;display:block;box-sizing:border-box;">${state.chatAnswer}</textarea>
+  ${state.chatSaved?`<div style="background:${t.surf2};border:1px solid ${t.bdr};border-radius:11px;padding:13px 16px;font-size:14px;line-height:1.8;margin-bottom:12px;"><b style="color:${A};display:block;margin-bottom:5px;">✓ Réponse sauvegardée</b>${state.chatSaved}</div>`:""}
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    ${secBtn("📝 Générer prompt","buildChatPrompt()")}
+    ${secBtn("💾 Sauvegarder","saveChatAnswer()")}
+    ${btn("Continuer → التالي","nextStep()")}
+  </div>`;
+}
+
+// ─── STEP: EXPR ───
+function stepExpr(){
+  const t=th();const c=state.exprConcept;
+  if(!c)return"";
+  return `
+  ${tag("Défi d'expression · تحدي التعبير")}
+  <div style="font-size:clamp(16px,3vw,22px);font-weight:800;margin-bottom:5px;">Expliquez ce concept avec vos propres mots :</div>
+  ${state.showAr?`<div class="ar" style="color:${t.dim};direction:rtl;margin-bottom:18px;font-size:15px;">اشرح هذا المفهوم بكلماتك الخاصة:</div>`:""}
+  ${card(`<div style="display:grid;grid-template-columns:${state.showAr?"1fr 1fr":"1fr"};gap:16px;">
+    <div style="border-right:${state.showAr?`1px solid ${t.bdr}`:"none"};padding-right:${state.showAr?"16px":"0"};">
+      <div style="font-size:10px;font-weight:700;color:${A};letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px;">🇫🇷 Concept</div>
+      <div style="font-size:16px;font-weight:800;color:${A};margin-bottom:4px;">${c.fr}</div>
+      <div style="font-size:12px;color:${t.dim};font-style:italic;">Écrivez comme si vous l'expliquiez à un collègue — pas de copier-coller !</div>
+    </div>
+    ${state.showAr?`<div style="direction:rtl;font-family:'Tajawal',sans-serif;">
+      <div style="font-size:10px;font-weight:700;color:${A};letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px;">🇩🇿 المفهوم</div>
+      <div style="font-size:16px;font-weight:800;color:${A2};margin-bottom:4px;">${c.ar}</div>
+      <div style="font-size:12px;color:${t.dim};font-style:italic;">اكتب كأنك تشرح لزميل — لا نسخ!</div>
+    </div>`:""}
+  </div>`)}
+  <textarea id="exprText" oninput="state.exprText=this.value" placeholder="Votre explication · شرحك الشخصي..." style="width:100%;background:${t.surf};border:2px solid ${t.bdr};border-radius:11px;padding:11px 14px;color:${t.txt};font-size:14px;font-family:inherit;resize:vertical;min-height:100px;line-height:1.7;margin-bottom:12px;display:block;box-sizing:border-box;">${state.exprText}</textarea>
+  ${state.exprPrompt?`<div style="background:${t.surf};border:1px solid ${t.bdr};border-radius:13px;padding:16px;margin-bottom:12px;">
+    <div style="font-size:11px;color:${t.dim};margin-bottom:8px;font-weight:600;letter-spacing:.05em;">📋 Prompt d'évaluation — coller dans Claude :</div>
+    <div style="font-size:12px;line-height:1.8;background:${t.surf2};padding:10px;border-radius:8px;margin-bottom:12px;white-space:pre-wrap;max-height:180px;overflow-y:auto;font-family:monospace;">${state.exprPrompt}</div>
+    <button onclick="copyExprPrompt()" style="background:${state.exprCopied?`linear-gradient(135deg,${GREEN},#059669)`:`linear-gradient(135deg,${A},${A2})`};color:#fff;border:none;border-radius:9px;padding:8px 16px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">${state.exprCopied?"✓ Copié! تم النسخ":"📋 Copier évaluation"}</button>
+  </div>`:""}
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    ${secBtn("🤖 Générer évaluation","buildExprPrompt()")}
+    ${btn("Terminer la leçon 🏆","exprFinish()")}
+  </div>`;
+}
+
+// ─── STEP: TD ───
+function stepTD(){
+  const t=th();const tdData=state.steps[state.stepIdx].tdData;
+  const tabs=[];
+  if(tdData.reflections.length>0)tabs.push("reflections");
+  if(tdData.exercises.length>0)tabs.push("exercises");
+  const activeTab=state.tdTab&&tabs.includes(state.tdTab)?state.tdTab:tabs[0];
+
+  let content="";
+  if(activeTab==="reflections"){
+    const ref=tdData.reflections[state.tdRefIdx];
+    if(ref){
+      content=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:11px;color:${t.dim};">Réflexion ${state.tdRefIdx+1}/${tdData.reflections.length}</div>
+        <div style="display:flex;gap:6px;">
+          ${state.tdRefIdx>0?`<button onclick="state.tdRefIdx--;state.tdRefShowSol=false;render()" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;">← Préc</button>`:""}
+          ${state.tdRefIdx<tdData.reflections.length-1?`<button onclick="state.tdRefIdx++;state.tdRefShowSol=false;render()" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;">Suiv →</button>`:""}
+        </div>
+      </div>
+      ${card(`<div>
+        <div style="font-size:10px;font-weight:700;color:${A};letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px;">❓ Question</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">${ref.qf}</div>
+        ${state.showAr?`<div class="ar" style="font-size:13px;color:${t.dim};direction:rtl;">${ref.qa}</div>`:""}
+      </div>`)}
+      ${state.tdRefShowSol?`
+      ${card(`<div>
+        <div style="font-size:10px;font-weight:700;color:${GREEN};letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;">✓ Solution</div>
+        <div style="font-size:13px;line-height:1.8;white-space:pre-line;">${ref.solutionFr}</div>
+        ${state.showAr?`<div class="ar" style="font-size:13px;line-height:1.8;direction:rtl;color:${t.dim};margin-top:10px;padding-top:10px;border-top:1px dashed ${t.bdr};white-space:pre-line;">${ref.solutionAr}</div>`:""}
+      </div>`,`border-top:3px solid ${GREEN};`)}
+      ${card(`<div>
+        <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;">💡 Méthode · الطريقة</div>
+        <div style="font-size:13px;line-height:1.8;">${ref.methodFr}</div>
+        ${state.showAr?`<div class="ar" style="font-size:13px;line-height:1.8;direction:rtl;color:${t.dim};margin-top:8px;padding-top:8px;border-top:1px dashed ${t.bdr};">${ref.methodAr}</div>`:""}
+      </div>`,`border-top:3px solid ${GOLD};`)}
+      `:`<button onclick="state.tdRefShowSol=true;render()" style="background:linear-gradient(135deg,${GREEN},#059669);color:#fff;border:none;border-radius:11px;padding:12px 22px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;width:100%;">Voir la solution · شاهد الحل</button>`}`;
+    }
+  } else {
+    const ex=tdData.exercises[state.tdExIdx];
+    if(ex){
+      content=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="font-size:11px;color:${t.dim};">Exercice ${state.tdExIdx+1}/${tdData.exercises.length}</div>
+          ${diffBadge(ex.difficulty)}
+        </div>
+        <div style="display:flex;gap:6px;">
+          ${state.tdExIdx>0?`<button onclick="state.tdExIdx--;state.tdExShowSol=false;render()" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;">← Préc</button>`:""}
+          ${state.tdExIdx<tdData.exercises.length-1?`<button onclick="state.tdExIdx++;state.tdExShowSol=false;render()" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;">Suiv →</button>`:""}
+        </div>
+      </div>
+      ${card(`<div>
+        <div style="font-size:10px;font-weight:700;color:${A};letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px;">✏️ ${ex.titleFr}</div>
+        ${state.showAr?`<div class="ar" style="font-size:12px;color:${t.dim};direction:rtl;margin-bottom:8px;">${ex.titleAr}</div>`:""}
+        <div style="font-size:13px;line-height:1.8;">${ex.statementFr}</div>
+        ${state.showAr?`<div class="ar" style="font-size:13px;line-height:1.8;direction:rtl;color:${t.dim};margin-top:8px;padding-top:8px;border-top:1px dashed ${t.bdr};">${ex.statementAr}</div>`:""}
+      </div>`)}
+      ${state.tdExShowSol?`
+      ${card(`<div>
+        <div style="font-size:10px;font-weight:700;color:${GREEN};letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;">✓ Solution</div>
+        <div style="font-size:13px;line-height:1.8;white-space:pre-line;">${ex.solutionFr}</div>
+        ${state.showAr?`<div class="ar" style="font-size:13px;line-height:1.8;direction:rtl;color:${t.dim};margin-top:10px;padding-top:10px;border-top:1px dashed ${t.bdr};white-space:pre-line;">${ex.solutionAr}</div>`:""}
+      </div>`,`border-top:3px solid ${GREEN};`)}
+      ${card(`<div>
+        <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;">💡 Méthode</div>
+        <div style="font-size:13px;line-height:1.8;white-space:pre-line;">${ex.methodFr}</div>
+        ${state.showAr?`<div class="ar" style="font-size:13px;line-height:1.8;direction:rtl;color:${t.dim};margin-top:8px;padding-top:8px;border-top:1px dashed ${t.bdr};white-space:pre-line;">${ex.methodAr}</div>`:""}
+      </div>`,`border-top:3px solid ${GOLD};`)}
+      `:`<button onclick="state.tdExShowSol=true;render()" style="background:linear-gradient(135deg,${GREEN},#059669);color:#fff;border:none;border-radius:11px;padding:12px 22px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;width:100%;">Voir la solution · شاهد الحل</button>`}`;
+    }
+  }
+
+  return `
+  ${tag("Travaux Dirigés · التمارين التطبيقية")}
+  <div style="font-size:clamp(16px,3vw,22px);font-weight:800;margin-bottom:16px;">Exercices & Réflexions</div>
+  ${tabs.length>1?`<div style="display:flex;gap:8px;margin-bottom:16px;background:${t.surf2};border-radius:12px;padding:4px;">
+    ${tabs.map(tab=>`<button onclick="state.tdTab='${tab}';render()" style="flex:1;background:${activeTab===tab?`linear-gradient(135deg,${A},${A2})`:"transparent"};color:${activeTab===tab?"#fff":t.dim};border:none;border-radius:9px;padding:10px 14px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;">${tab==="reflections"?"❓ Réflexions · التفكير":"✏️ Exercices · التمارين"}</button>`).join("")}
+  </div>`:""}
+  ${content}
+  <div style="margin-top:16px;">${btn("Terminer la leçon 🏆","tdFinish()")}</div>`;
+}
+
+// ─── SR SESSION ───
+function renderSR(){
+  const t=th();
+  if(state.srSessionDone){
+    return renderSRDone();
+  }
+  const card_sr=state.srQueue[state.srIdx];
+  const srProgress=Math.round((state.srIdx/state.srQueue.length)*100);
+  const cardSrData=state.srData[card_sr?.id];
+  const gradeInfo={
+    again:{emoji:"🔴",labelFr:"À revoir",labelAr:"مجدداً",sub:"< 1j",color:RED,
+      toastFr:"Pas de souci ! On revient dessus.",toastAr:"لا بأس! سنعود إليه.",
+      nextFr:"Revient dans cette session",nextAr:"يعود في هذه الجلسة"},
+    hard:{emoji:"🟡",labelFr:"Difficile",labelAr:"صعب",sub:"1j",color:GOLD,
+      toastFr:"Noté ! Révision demain.",toastAr:"حسناً! مراجعة غداً.",
+      nextFr:"Prochain rappel : demain",nextAr:"المراجعة التالية: غداً"},
+    good:{emoji:"🔵",labelFr:"Bien",labelAr:"جيد",sub:"3j",color:A,
+      toastFr:"Bien joué ! +3j de pause.",toastAr:"أحسنت! +3 أيام.",
+      nextFr:"Prochain rappel : dans 3 jours",nextAr:"المراجعة التالية: بعد 3 أيام"},
+    easy:{emoji:"🟢",labelFr:"Facile",labelAr:"سهل",sub:"7j",color:GREEN,
+      toastFr:"Excellent ! Tu maîtrises ça.",toastAr:"ممتاز! أتقنت هذا المفهوم.",
+      nextFr:"Prochain rappel : dans 7 jours",nextAr:"المراجعة التالية: بعد 7 أيام"},
+  };
+  const cardFaceHtml=!state.srRevealed?`
+    <div style="font-size:22px;font-weight:800;color:${A};">${card_sr.fr}</div>
+    ${state.showAr?`<div class="ar" style="font-size:17px;color:${A2};">${card_sr.ar}</div>`:""}
+    <div style="font-size:11px;color:${t.dim};margin-top:8px;letter-spacing:.06em;">Cliquer pour révéler · انقر للكشف</div>
+  `:`
+    <div style="width:100%;text-align:left;">
+      <div style="font-weight:700;color:${A};margin-bottom:6px;font-size:15px;">${card_sr.fr}${state.showAr?`<span class="ar" style="color:${A2};margin-right:8px;"> · ${card_sr.ar}</span>`:""}</div>
+      <div style="font-size:14px;line-height:1.8;margin-bottom:10px;">${card_sr.df}</div>
+      ${state.showAr?`<div class="ar" style="font-size:14px;line-height:1.8;direction:rtl;color:${t.dim};margin-bottom:10px;">${card_sr.da}</div>`:""}
+      <div style="padding-top:10px;border-top:1px dashed ${t.bdr};font-size:13px;color:${t.dim};font-style:italic;">📌 ${card_sr.ef}${state.showAr?`<div class="ar" style="direction:rtl;margin-top:4px;">📌 ${card_sr.ea}</div>`:""}</div>
+    </div>
+  `;
+  const gradeButtons=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
+    ${["again","hard","good","easy"].map(g=>{
+      const info=gradeInfo[g];
+      return `<button onclick="gradeSR('${g}')" style="background:${t.dark?info.color+"18":info.color+"12"};border:2px solid ${info.color};color:${info.color};border-radius:11px;padding:10px 6px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;text-align:center;line-height:1.5;">
+        <div style="font-size:16px;margin-bottom:2px;">${info.emoji}</div>
+        <div>${info.labelFr}</div>
+        ${state.showAr?`<div class="ar" style="font-size:11px;">${info.labelAr}</div>`:""}
+        <div style="font-size:10px;opacity:.6;margin-top:2px;">${info.sub}</div>
+      </button>`;
+    }).join("")}
+  </div>`;
+
+  document.getElementById("root").innerHTML=`
+  <div style="background:${t.bg};min-height:100vh;color:${t.txt};font-family:'Syne',sans-serif;">
+    ${state.srGradeToast?`<div id="gradeToast" style="position:fixed;top:80px;left:50%;transform:translateX(-50%);background:${t.surf};border:2px solid ${state.srGradeToast.color};border-radius:16px;padding:14px 22px;z-index:999;box-shadow:0 8px 32px ${state.srGradeToast.color}40;min-width:260px;text-align:center;animation:toastIn .25s ease;">
+      <div style="font-size:28px;margin-bottom:6px;">${state.srGradeToast.emoji}</div>
+      <div style="font-weight:800;font-size:15px;color:${state.srGradeToast.color};margin-bottom:3px;">${state.srGradeToast.labelFr}${state.showAr?`<span class="ar" style="margin-right:6px;"> · ${state.srGradeToast.labelAr}</span>`:""}</div>
+      <div style="font-size:13px;color:${t.dim};line-height:1.6;">${state.srGradeToast.toastFr}${state.showAr?`<div class="ar" style="direction:rtl;margin-top:3px;font-size:12px;">${state.srGradeToast.toastAr}</div>`:""}</div>
+      <div style="margin-top:8px;font-size:11px;color:${state.srGradeToast.color};font-weight:700;background:${state.srGradeToast.color}15;border-radius:100px;padding:3px 12px;display:inline-block;">📅 ${state.srGradeToast.nextFr}${state.showAr?`<span class="ar" style="margin-right:4px;"> · ${state.srGradeToast.nextAr}</span>`:""}</div>
+    </div>`:""}
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${t.surf};border-bottom:1px solid ${t.bdr};position:sticky;top:0;">
+      <button onclick="goPage('home')" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:10px;padding:7px 13px;font-size:13px;cursor:pointer;font-family:inherit;">← Retour</button>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:700;">🧠 Révision espacée · المراجعة المتباعدة</div>
+        ${state.showAr?`<div class="ar" style="font-size:11px;color:${t.dim};direction:rtl;">بطاقة ${state.srIdx+1} من ${state.srQueue.length}</div>`:""}
+      </div>
+      <div style="flex:2;">
+        <div style="height:6px;background:${t.surf2};border-radius:100px;overflow:hidden;"><div style="height:100%;width:${srProgress}%;background:linear-gradient(90deg,${GREEN},#059669);border-radius:100px;transition:width .4s;"></div></div>
+        <div style="font-size:10px;color:${t.dim};text-align:center;margin-top:3px;">${state.srIdx+1} / ${state.srQueue.length}</div>
+      </div>
+      <div style="background:${t.surf2};border:1px solid ${t.bdr};border-radius:100px;padding:5px 12px;font-size:13px;font-weight:700;color:${GOLD};">⭐ ${state.xp}</div>
+    </div>
+    <div style="display:flex;justify-content:center;padding:28px 16px;">
+      <div style="max-width:660px;width:100%;" class="fade">
+        <div style="display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${A};margin-bottom:14px;background:${t.surf2};border:1px solid ${t.bdr};border-radius:100px;padding:4px 12px;">
+          🧠 Leçon ${card_sr.lessonId} · ${card_sr.lessonFr}${state.showAr?`<span class="ar" style="color:${A2};"> · ${card_sr.lessonAr}</span>`:""}
+        </div>
+        ${cardSrData?`<div style="font-size:11px;color:${t.dim};margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;">
+          <span>🔄 Intervalle : <b>${cardSrData.interval}j</b></span>
+          <span>⚠️ Erreurs : <b>${cardSrData.lapses||0}</b></span>
+          <span>📅 ${daysLabel(cardSrData.nextReview)}</span>
+        </div>`:""}
+        <div onclick="${!state.srRevealed?"revealSR()":""}" style="background:${t.surf};border:1px solid ${t.bdr};border-radius:14px;padding:26px;margin-bottom:18px;min-height:180px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center;cursor:${!state.srRevealed?"pointer":"default"};border-bottom:3px solid ${state.srRevealed?A2:A};transition:border-color .3s;">
+          ${cardFaceHtml}
+        </div>
+        ${!state.srRevealed?`<button onclick="revealSR()" style="width:100%;background:linear-gradient(135deg,${A},${A2});color:#fff;border:none;border-radius:11px;padding:14px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Révéler la définition · اكشف التعريف</button>`
+        :`<div style="font-size:12px;color:${t.dim};text-align:center;margin-bottom:10px;font-weight:600;">Comment avez-vous trouvé ce concept ? · كيف وجدت هذا المفهوم؟</div>${gradeButtons}`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderSRDone(){
+  const t=th();
+  document.getElementById("root").innerHTML=`
+  <div style="background:${t.bg};min-height:100vh;color:${t.txt};font-family:'Syne',sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="max-width:460px;width:100%;text-align:center;" class="fade">
+      <div style="font-size:60px;margin-bottom:16px;">🧠</div>
+      <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,${GREEN},#059669);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;">Session terminée !</div>
+      ${state.showAr?`<div class="ar" style="font-size:17px;color:${t.dim};margin-bottom:10px;">انتهت جلسة المراجعة!</div>`:""}
+      <div style="color:${t.dim};font-size:14px;line-height:1.8;margin-bottom:24px;">
+        ${state.srQueue.length} cartes révisées · <b style="color:${GOLD};">+${state.srQueue.length*3} XP</b>
+      </div>
+      <div style="background:${t.surf};border:1px solid ${t.bdr};border-radius:14px;padding:18px;margin-bottom:20px;text-align:left;">
+        <div style="font-size:11px;font-weight:700;color:${A};letter-spacing:.07em;text-transform:uppercase;margin-bottom:12px;">Prochaines révisions · المراجعات القادمة</div>
+        ${SR_CARDS.filter(c=>state.srData[c.id]).slice(0,6).map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid ${t.bdr};font-size:13px;">
+          <span style="font-weight:600;">${c.fr}</span>
+          <span style="font-size:11px;color:${t.dim};background:${t.surf2};padding:3px 8px;border-radius:100px;">${daysLabel(state.srData[c.id]?.nextReview||0)}</span>
+        </div>`).join("")}
+      </div>
+      <button onclick="goPage('home')" style="background:linear-gradient(135deg,${A},${A2});color:#fff;border:none;border-radius:13px;padding:14px 32px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">← Retour · العودة</button>
+    </div>
+  </div>`;
+}
+
+// ─── TD BROWSE PAGE ───
+function renderTDBrowse(){
+  const t=th();
+  let html=`<div style="background:${t.bg};min-height:100vh;color:${t.txt};font-family:'Syne',sans-serif;">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${t.surf};border-bottom:1px solid ${t.bdr};position:sticky;top:0;z-index:10;">
+      <button onclick="goPage('home')" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:10px;padding:7px 13px;font-size:13px;cursor:pointer;font-family:inherit;">← Retour</button>
+      <div><div style="font-size:13px;font-weight:700;">✏️ Travaux Dirigés</div>${state.showAr?`<div class="ar" style="font-size:11px;color:${t.dim};direction:rtl;">التمارين التطبيقية</div>`:""}</div>
+    </div>
+    <div style="max-width:700px;margin:0 auto;padding:24px 16px;">`;
+  TD.forEach(tdData=>{
+    const L=BOOK.find(b=>b.id===tdData.lessonId);if(!L)return;
+    html+=`<div style="background:${t.surf};border:1px solid ${t.bdr};border-radius:14px;padding:22px;margin-bottom:16px;border-top:3px solid ${A};">
+      <div style="font-size:11px;font-weight:700;color:${A};letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">Leçon ${L.id}</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:4px;">${L.fr}</div>
+      ${state.showAr?`<div class="ar" style="font-size:14px;color:${t.dim};direction:rtl;margin-bottom:12px;">${L.ar}</div>`:""}`;
+    if(tdData.reflections.length>0){
+      html+=`<div style="font-size:12px;font-weight:700;color:${t.dim};margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">❓ Réflexions (${tdData.reflections.length})</div>`;
+      tdData.reflections.forEach((ref,ri)=>{
+        const key=`td_ref_${tdData.lessonId}_${ri}`;
+        const shown=window[key];
+        html+=`<div style="background:${t.surf2};border:1px solid ${t.bdr};border-radius:11px;padding:14px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:3px;">${ref.qf}</div>
+          ${state.showAr?`<div class="ar" style="font-size:12px;color:${t.dim};direction:rtl;margin-bottom:8px;">${ref.qa}</div>`:""}
+          ${shown?`<div style="font-size:13px;line-height:1.8;color:${t.dim};white-space:pre-line;margin-top:8px;padding-top:8px;border-top:1px dashed ${t.bdr};">${ref.solutionFr}${state.showAr?`<div class="ar" style="direction:rtl;margin-top:6px;white-space:pre-line;">${ref.solutionAr}</div>`:""}</div>`:""}
+          <button onclick="window['${key}']=!window['${key}'];renderTDBrowse()" style="background:${shown?t.surf2:`linear-gradient(135deg,${GREEN},#059669)`};color:${shown?t.dim:"#fff"};border:1px solid ${t.bdr};border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;">${shown?"Masquer · إخفاء":"Voir solution · شاهد الحل"}</button>
+        </div>`;
+      });
+    }
+    if(tdData.exercises.length>0){
+      html+=`<div style="font-size:12px;font-weight:700;color:${t.dim};margin-top:10px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">✏️ Exercices (${tdData.exercises.length})</div>`;
+      tdData.exercises.forEach((ex,ei)=>{
+        const key=`td_ex_${tdData.lessonId}_${ei}`;
+        const shown=window[key];
+        html+=`<div style="background:${t.surf2};border:1px solid ${t.bdr};border-radius:11px;padding:14px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="font-size:13px;font-weight:700;">${ex.titleFr}</div>
+            ${diffBadge(ex.difficulty)}
+          </div>
+          ${state.showAr?`<div class="ar" style="font-size:12px;color:${t.dim};direction:rtl;margin-bottom:6px;">${ex.titleAr}</div>`:""}
+          <div style="font-size:13px;color:${t.dim};line-height:1.8;margin-bottom:8px;">${ex.statementFr}</div>
+          ${shown?`<div style="font-size:13px;line-height:1.8;white-space:pre-line;padding-top:8px;border-top:1px dashed ${t.bdr};margin-top:8px;">${ex.solutionFr}${state.showAr?`<div class="ar" style="direction:rtl;color:${t.dim};margin-top:8px;padding-top:8px;border-top:1px dashed ${t.bdr};white-space:pre-line;">${ex.solutionAr}</div>`:""}</div><div style="font-size:13px;line-height:1.8;white-space:pre-line;padding:10px;background:${GOLD}11;border-radius:8px;margin-top:10px;border-left:3px solid ${GOLD};"><b style="color:${GOLD};">💡 Méthode</b><br>${ex.methodFr}${state.showAr?`<div class="ar" style="direction:rtl;color:${t.dim};margin-top:6px;white-space:pre-line;">${ex.methodAr}</div>`:""}</div>`:""}
+          <button onclick="window['${key}']=!window['${key}'];renderTDBrowse()" style="background:${shown?t.surf2:`linear-gradient(135deg,${GREEN},#059669)`};color:${shown?t.dim:"#fff"};border:1px solid ${t.bdr};border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;">${shown?"Masquer · إخفاء":"Voir solution · شاهد الحل"}</button>
+        </div>`;
+      });
+    }
+    html+="</div>";
+  });
+  html+="</div></div>";
+  document.getElementById("root").innerHTML=html;
+}
+
+// ─── PLAN PAGE ───
+function renderPlan(){
+  const t=th();
+  const planFR=[
+    {icon:"📖",titleFr:"Étape 1 — Lecture active",titleAr:"الخطوة 1 — القراءة النشطة",steps:[
+      {fr:"Avant de lire chaque leçon, lis d'abord le sommaire pour avoir une carte mentale.",ar:"قبل قراءة كل درس، اقرأ الفهرس أولاً لتكوّن خريطة ذهنية."},
+      {fr:"Transforme chaque titre en question. Ex : 'Notion d'information' → 'C'est quoi une information ?'",ar:"حوّل كل عنوان إلى سؤال. مثال: 'مفهوم المعلومة' ← 'ما هي المعلومة؟'"},
+      {fr:"Lis pour répondre à ta question, pas pour tout retenir.",ar:"اقرأ للإجابة على سؤالك، لا لحفظ كل شيء."},
+      {fr:"Souligne uniquement les définitions et exemples clés (max 3 lignes/page).",ar:"ضع خطاً تحت التعريفات والأمثلة الأساسية فقط."},
+    ]},
+    {icon:"📝",titleFr:"Étape 2 — La fiche récapitulative",titleAr:"الخطوة 2 — ورقة الملخص",steps:[
+      {fr:"Ferme le livre. Sur une feuille vierge, écris tout ce dont tu te souviens.",ar:"أغلق الكتاب. على ورقة بيضاء، اكتب كل ما تتذكره."},
+      {fr:"Structure : Titre → Définitions clés → Exemple pour chaque concept → Liens.",ar:"الهيكل: عنوان ← تعريفات ← مثال لكل مفهوم ← الصلات."},
+      {fr:"Rouvre le livre et complète uniquement ce qui manque (en couleur différente).",ar:"أعد فتح الكتاب وأكمل فقط ما نقصك (بلون مختلف)."},
+      {fr:"C'est l'étape la plus importante — cœur de l'apprentissage actif.",ar:"هذه الخطوة هي الأهم — جوهر التعلم النشط."},
+    ]},
+    {icon:"🔄",titleFr:"Étape 3 — Révision espacée",titleAr:"الخطوة 3 — المراجعة المتباعدة",steps:[
+      {fr:"Après chaque leçon : découpe ta fiche en petites cartes (1 concept = 1 carte).",ar:"بعد كل درس: قطّع ورقتك إلى بطاقات صغيرة (مفهوم واحد = بطاقة)."},
+      {fr:"Recto : terme en français. Verso : définition + exemple.",ar:"الوجه الأمامي: المصطلح. الخلفي: التعريف + المثال."},
+      {fr:"Calendrier : revoir jour 1 → 3 → 7 → 14 → 30.",ar:"الجدول: مراجعة في اليوم 1 ← 3 ← 7 ← 14 ← 30."},
+      {fr:"Pile A (bien su) : 7 jours. Pile B (hésitation) : 3 jours. Pile C (oublié) : demain.",ar:"كومة أ (أتقنتها): 7 أيام. ب (تردد): 3 أيام. ج (نسيتها): غداً."},
+    ]},
+    {icon:"💬",titleFr:"Étape 4 — Reformulation à voix haute",titleAr:"الخطوة 4 — إعادة الصياغة بصوت عالٍ",steps:[
+      {fr:"Explique chaque concept comme si tu l'enseignais à quelqu'un.",ar:"اشرح كل مفهوم كأنك تعلّمه لشخص آخر."},
+      {fr:"Si tu butes sur un mot → c'est là où ton apprentissage est incomplet.",ar:"إذا تعثّرت في كلمة ← فهذا موضع الثغرة في فهمك."},
+      {fr:"Variante : écris une explication de 5 lignes max sans regarder tes notes.",ar:"بديل: اكتب شرحاً من 5 أسطر دون النظر لملاحظاتك."},
+    ]},
+    {icon:"✏️",titleFr:"Étape 5 — Travaux dirigés (sans corrigé d'abord)",titleAr:"الخطوة 5 — التمارين التطبيقية",steps:[
+      {fr:"Tente chaque exercice seul pendant 15 minutes minimum, même si tu bloques.",ar:"حاول حل كل تمرين بمفردك 15 دقيقة على الأقل، حتى لو توقفت."},
+      {fr:"Note les points précis où tu bloques.",ar:"دوّن النقاط التي تتوقف عندها بدقة."},
+      {fr:"Consulte le corrigé, compare avec ta tentative, identifie l'écart.",ar:"راجع الحل، قارن مع محاولتك، حدّد الفارق."},
+      {fr:"Refais l'exercice de mémoire 2 jours après.",ar:"أعد حل التمرين من الذاكرة بعد يومين."},
+    ]},
+    {icon:"📊",titleFr:"Planning hebdomadaire recommandé",titleAr:"الجدول الأسبوعي المقترح",isTable:true,rows:[
+      {day:"Lundi · الاثنين",task:"Lecture active Leçon 1-2"},
+      {day:"Mardi · الثلاثاء",task:"Fiches + reformulation à voix haute"},
+      {day:"Mercredi · الأربعاء",task:"TD Leçon 1-2 + révision cartes"},
+      {day:"Jeudi · الخميس",task:"Lecture active Leçon 3-4"},
+      {day:"Vendredi · الجمعة",task:"Fiches + révision cartes anciennes"},
+      {day:"Samedi · السبت",task:"TD Leçon 3-4 + révision générale"},
+      {day:"Dimanche · الأحد",task:"Repos actif : reformuler 5 concepts à voix haute"},
+    ]},
+  ];
+  const planAR=[
+    {icon:"🌍",titleFr:"Cas : Livre en arabe uniquement",titleAr:"الحالة: الكتاب بالعربية فقط",highlight:true,steps:[
+      {fr:"Avantage majeur : la barrière linguistique disparaît, la compréhension profonde est possible dès la 1ère lecture.",ar:"ميزة كبرى: تختفي حاجز اللغة، ويصبح الفهم العميق ممكناً من القراءة الأولى."},
+      {fr:"Applique exactement les mêmes 5 étapes du plan précédent.",ar:"طبّق نفس الخطوات الخمس من الخطة السابقة بالضبط."},
+      {fr:"Reformule directement en arabe, sans passer par la traduction mentale.",ar:"أعد الصياغة مباشرة بالعربية دون الترجمة الذهنية."},
+    ]},
+    {icon:"📘",titleFr:"Adaptation pour un livre arabe",titleAr:"التكيف مع الكتاب العربي",steps:[
+      {fr:"Tes fiches seront entièrement en arabe — exemples tirés de ton contexte local.",ar:"ستكون ملاحظاتك كلها بالعربية — أمثلة من سياقك المحلي."},
+      {fr:"Conserve les termes techniques en français entre parenthèses (MCD, S.I.A., etc.).",ar:"احتفظ بالمصطلحات التقنية بالفرنسية بين قوسين (MCD، S.I.A.، إلخ)."},
+      {fr:"Format : Terme FR | Terme AR | Définition AR | Exemple local.",ar:"نموذج البطاقة: المصطلح الفرنسي | العربي | التعريف | مثال محلي."},
+    ]},
+    {icon:"⚡",titleFr:"Gain de temps vs livre français",titleAr:"الوقت المُوفَّر مقارنة بالفرنسي",steps:[
+      {fr:"Compréhension : -40% de temps (pas besoin de décoder la langue).",ar:"الفهم: توفير 40% من الوقت (لا حاجة لفكّ رموز اللغة)."},
+      {fr:"Mémorisation : +30% d'efficacité (on mémorise mieux dans sa langue maternelle).",ar:"الحفظ: كفاءة أعلى بـ 30% (نحفظ أفضل بلغتنا الأم)."},
+      {fr:"Expression : directe, sans traduction mentale épuisante.",ar:"التعبير: مباشر، دون الترجمة الذهنية المُجهِدة."},
+    ]},
+    {icon:"💡",titleFr:"Conseil : le pont FR-AR",titleAr:"نصيحة: جسر الفرنسية-العربية",steps:[
+      {fr:"Même avec un livre arabe, entraîne-toi à expliquer les concepts EN FRANÇAIS (pour les examens).",ar:"حتى مع كتاب عربي، تدرّب على شرح المفاهيم بالفرنسية (للامتحانات)."},
+      {fr:"Méthode : comprends en arabe → fiche en arabe → reformulation orale en français.",ar:"الطريقة: افهم بالعربية ← ملخص بالعربية ← إعادة صياغة شفهية بالفرنسية."},
+      {fr:"C'est exactement ce que fait ce tuteur numérique : bilinguisme actif.",ar:"هذا بالضبط ما يفعله هذا التطبيق: ثنائية لغوية نشطة."},
+    ]},
+  ];
+  const plan=state.planScenario==="fr"?planFR:planAR;
+  let sectionsHtml=plan.map(section=>{
+    let inner="";
+    if(section.isTable){
+      inner=`<div style="border-radius:10px;overflow:hidden;border:1px solid ${t.bdr};">${section.rows.map((row,ri)=>`<div style="display:grid;grid-template-columns:1fr 2fr;background:${ri%2===0?t.surf2:t.surf};padding:10px 14px;border-bottom:${ri<section.rows.length-1?`1px solid ${t.bdr}`:"none"};">
+        <div style="font-size:12px;font-weight:700;color:${A};">${row.day}</div>
+        <div style="font-size:12px;color:${t.txt};line-height:1.6;">${row.task}</div>
+      </div>`).join("")}</div>`;
+    } else {
+      inner=section.steps.map((step,i)=>`<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;">
+        <div style="min-width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,${A},${A2});color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;flex-shrink:0;">${i+1}</div>
+        <div>
+          <div style="font-size:13px;line-height:1.7;">${step.fr}</div>
+          ${state.showAr?`<div class="ar" style="font-size:13px;color:${t.dim};direction:rtl;margin-top:3px;line-height:1.7;">${step.ar}</div>`:""}
+        </div>
+      </div>`).join("");
+    }
+    return `<div style="background:${t.surf};border:1px solid ${section.highlight?A:t.bdr};border-radius:14px;padding:22px;margin-bottom:16px;border-top:3px solid ${section.highlight?A:t.bdr};">
+      <div style="font-size:16px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px;"><span>${section.icon}</span>${section.titleFr}</div>
+      ${state.showAr?`<div class="ar" style="font-size:14px;color:${t.dim};direction:rtl;margin-bottom:14px;">${section.titleAr}</div>`:""}
+      ${inner}
+    </div>`;
+  }).join("");
+
+  document.getElementById("root").innerHTML=`
+  <div style="background:${t.bg};min-height:100vh;color:${t.txt};font-family:'Syne',sans-serif;">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${t.surf};border-bottom:1px solid ${t.bdr};position:sticky;top:0;z-index:10;">
+      <button onclick="goPage('home')" style="background:${t.surf2};border:1px solid ${t.bdr};color:${t.dim};border-radius:10px;padding:7px 13px;font-size:13px;cursor:pointer;font-family:inherit;">← Retour</button>
+      <div><div style="font-size:13px;font-weight:700;">📋 Plan d'étude optimal</div>${state.showAr?`<div class="ar" style="font-size:11px;color:${t.dim};direction:rtl;">خطة الدراسة المثلى</div>`:""}</div>
+    </div>
+    <div style="max-width:700px;margin:0 auto;padding:24px 16px;">
+      <div style="display:flex;gap:8px;margin-bottom:24px;background:${t.surf2};border-radius:12px;padding:4px;">
+        <button onclick="state.planScenario='fr';renderPlan()" style="flex:1;background:${state.planScenario==='fr'?`linear-gradient(135deg,${A},${A2})`:"transparent"};color:${state.planScenario==='fr'?"#fff":t.dim};border:none;border-radius:9px;padding:10px 14px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;">📚 Livre en français</button>
+        <button onclick="state.planScenario='ar';renderPlan()" style="flex:1;background:${state.planScenario==='ar'?`linear-gradient(135deg,${A},${A2})`:"transparent"};color:${state.planScenario==='ar'?"#fff":t.dim};border:none;border-radius:9px;padding:10px 14px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;">📖 Livre en arabe</button>
+      </div>
+      ${sectionsHtml}
+    </div>
+  </div>`;
+}
+
+// ─── LESSON PAGE ───
+function renderLesson(){
+  const t=th();const step=state.steps[state.stepIdx]||{t:"intro"};
+  let stepHtml="";
+  if(step.t==="intro")stepHtml=stepIntro();
+  else if(step.t==="card")stepHtml=stepCard();
+  else if(step.t==="quiz")stepHtml=stepQuiz();
+  else if(step.t==="chat")stepHtml=stepChat();
+  else if(step.t==="expr")stepHtml=stepExpr();
+  else if(step.t==="td")stepHtml=stepTD();
+  document.getElementById("root").innerHTML=`
+  <div style="background:${t.bg};min-height:100vh;color:${t.txt};font-family:'Syne',sans-serif;">
+    ${lessonHeader()}
+    <div style="display:flex;justify-content:center;padding:28px 16px;">
+      <div style="max-width:660px;width:100%;" class="fade">${stepHtml}</div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// MAIN RENDER DISPATCHER
+// ═══════════════════════════════════════
+function render(){
+  const t=th();
+  document.body.style.background=t.bg;
+  document.body.style.color=t.txt;
+  if(state.page==="home")renderHome();
+  else if(state.page==="done")renderDone();
+  else if(state.page==="sr")renderSR();
+  else if(state.page==="td-browse")renderTDBrowse();
+  else if(state.page==="plan")renderPlan();
+  else if(state.page==="lesson")renderLesson();
+}
+
+// ═══════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════
+function goPage(p){state.page=p;render();}
+function toggleDark(){state.dark=!state.dark;render();}
+function toggleAr(){state.showAr=!state.showAr;render();}
+
+function startLesson(idx){
+  state.lessonIdx=idx;state.stepIdx=0;state.correct=0;state.total=0;
+  state.steps=buildSteps(BOOK[idx]);
+  state.cardFlipped=false;state.quizChosen=null;
+  state.chatText="";state.chatPrompt="";state.chatAnswer="";state.chatCopied=false;state.chatSaved="";
+  state.exprText="";state.exprPrompt="";state.exprCopied=false;
+  state.exprConcept=BOOK[idx].concepts[Math.floor(Math.random()*BOOK[idx].concepts.length)];
+  state.tdTab="reflections";state.tdExIdx=0;state.tdExShowSol=false;state.tdRefIdx=0;state.tdRefShowSol=false;
+  state.page="lesson";render();
+}
+
+function nextStep(){
+  const ns=state.stepIdx+1;
+  if(ns>=state.steps.length){
+    state.done[state.lessonIdx]=true;
+    state.xp+=state.correct*10;
+    markLessonSeen(BOOK[state.lessonIdx].id);
+    state.page="done";render();
+  } else {
+    state.stepIdx=ns;
+    state.cardFlipped=false;state.quizChosen=null;
+    render();
+  }
+}
+
+function flipCard(){state.cardFlipped=true;render();}
+
+function cardNext(){addXP(5);nextStep();}
+
+function chooseQuiz(i){
+  const q=state.steps[state.stepIdx].q;
+  state.quizChosen=i;
+  state.total++;
+  if(i===q.ans){state.correct++;addXP(10);}
+  render();
+}
+
+function markLessonSeen(lessonId){
+  SR_CARDS.filter(c=>c.lessonId===lessonId).forEach(c=>{
+    if(!state.srData[c.id])state.srData[c.id]=srUpdate({easeFactor:2.5,lapses:0},"good");
+  });
+}
+
+function startSR(){
+  const due=getDueCards(SR_CARDS,state.srData);
+  if(due.length===0){showToast("Aucune carte à revoir ! · لا بطاقات",GREEN);return;}
+  state.srQueue=due.slice(0,20);state.srIdx=0;state.srSessionDone=false;state.srRevealed=false;state.srGradeToast=null;
+  state.page="sr";render();
+}
+
+function revealSR(){state.srRevealed=true;render();}
+
+function gradeSR(grade){
+  const gradeInfo={
+    again:{emoji:"🔴",labelFr:"À revoir",labelAr:"مجدداً",color:RED,toastFr:"Pas de souci ! On revient dessus.",toastAr:"لا بأس! سنعود إليه.",nextFr:"Revient dans cette session",nextAr:"يعود في هذه الجلسة"},
+    hard:{emoji:"🟡",labelFr:"Difficile",labelAr:"صعب",color:GOLD,toastFr:"Noté ! Révision demain.",toastAr:"حسناً! مراجعة غداً.",nextFr:"Prochain rappel : demain",nextAr:"المراجعة التالية: غداً"},
+    good:{emoji:"🔵",labelFr:"Bien",labelAr:"جيد",color:A,toastFr:"Bien joué ! +3j de pause.",toastAr:"أحسنت! +3 أيام.",nextFr:"Prochain rappel : dans 3 jours",nextAr:"المراجعة التالية: بعد 3 أيام"},
+    easy:{emoji:"🟢",labelFr:"Facile",labelAr:"سهل",color:GREEN,toastFr:"Excellent ! Tu maîtrises ça.",toastAr:"ممتاز! أتقنت هذا المفهوم.",nextFr:"Prochain rappel : dans 7 jours",nextAr:"المراجعة التالية: بعد 7 أيام"},
+  };
+  const card=state.srQueue[state.srIdx];
+  state.srData[card.id]=srUpdate(state.srData[card.id]||{easeFactor:2.5,lapses:0},grade);
+  state.srGradeToast={...gradeInfo[grade],grade};
+  if(grade==="again")state.srQueue=[...state.srQueue,card];
+  render();
+  setTimeout(()=>{
+    state.srGradeToast=null;state.srRevealed=false;
+    const nextIdx=state.srIdx+1;
+    if(nextIdx>=state.srQueue.length){state.srSessionDone=true;state.xp+=state.srQueue.length*3;}
+    else state.srIdx=nextIdx;
+    render();
+  },1100);
+}
+
+// Chat actions
+function buildChatPrompt(){
+  const text=document.getElementById("chatText")?.value||state.chatText;
+  state.chatText=text;
+  if(!text.trim()){showToast("Entrez une question · اكتب سؤالاً",RED);return;}
+  const L=BOOK[state.lessonIdx];
+  const concepts=L.concepts.map(c=>`- ${c.fr} (${c.ar}): ${c.df}`).join("\n");
+  state.chatPrompt=`Tu es un expert pédagogue en Systèmes d'Information basé sur le livre "Introduction aux Systèmes d'Information" (Pages Bleues).\n\nConcepts de la leçon :\n${concepts}\n\nQuestion : ${text}\n\nRéponds en FRANÇAIS avec traduction arabe des points clés. Exemple concret obligatoire. Max 200 mots.`;
+  state.chatCopied=false;render();
+}
+function copyChatPrompt(){
+  navigator.clipboard.writeText(state.chatPrompt).catch(()=>{
+    const a=document.createElement("textarea");a.value=state.chatPrompt;document.body.appendChild(a);a.select();document.execCommand("copy");document.body.removeChild(a);
+  });
+  state.chatCopied=true;showToast("Copié → Collez dans Claude",GREEN);render();
+}
+function saveChatAnswer(){
+  const text=document.getElementById("chatAnswer")?.value||state.chatAnswer;
+  state.chatAnswer=text;
+  if(!text.trim()){showToast("Collez la réponse d'abord",RED);return;}
+  state.chatSaved=text;addXP(5);render();
+}
+function setChatSugg(i){
+  const L=BOOK[state.lessonIdx];
+  const suggs=[
+    `Expliquez "${L.concepts[0]?.fr}" avec un exemple concret du monde réel`,
+    `Différence entre "${L.concepts[0]?.fr}" et "${L.concepts[1]?.fr}" ?`,
+    `Application de ces concepts dans une entreprise moderne ?`
+  ];
+  state.chatText=suggs[i];render();
+  setTimeout(()=>{const el=document.getElementById("chatText");if(el)el.value=suggs[i];},0);
+}
+
+// Expr actions
+function buildExprPrompt(){
+  const text=document.getElementById("exprText")?.value||state.exprText;
+  state.exprText=text;
+  if(!text.trim()||text.length<15){showToast("Écrivez plus · اكتب أكثر",RED);return;}
+  const c=state.exprConcept;
+  state.exprPrompt=`Tu es un évaluateur pédagogique expert en Systèmes d'Information.\n\nConcept : "${c.fr}" (بالعربية: "${c.ar}")\nDéfinition correcte : "${c.df}"\n\nL'étudiant a écrit : "${text}"\n\nÉvalue en 3 points avec traduction arabe :\n1. ✓ Ce qui est juste\n2. ⚠ Ce qui manque\n3. 💡 Conseil pour améliorer\n\nSois encourageant et rigoureux. Max 150 mots.`;
+  state.exprCopied=false;render();
+}
+function copyExprPrompt(){
+  navigator.clipboard.writeText(state.exprPrompt).catch(()=>{
+    const a=document.createElement("textarea");a.value=state.exprPrompt;document.body.appendChild(a);a.select();document.execCommand("copy");document.body.removeChild(a);
+  });
+  state.exprCopied=true;showToast("Collez dans Claude pour l'évaluation",GREEN);render();
+}
+function exprFinish(){addXP(15);nextStep();}
+
+// TD actions
+function tdFinish(){addXP(10);nextStep();}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+render();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+</script>
+</body>
+</html>
